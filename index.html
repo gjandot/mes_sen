@@ -1,0 +1,494 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8">
+<title>Mes-Sen</title>
+<style>
+.nomsen {color: black; font-size:100%; cursor:pointer; }
+.nomsen:hover { color:blue; font-size:120%; }
+#nomok { color:green; font-size:130%; }
+#nomno { color:red; font-size:110%; text-decoration : line-through; }
+
+.imgsen {cursor:pointer; spacing:9; border: 1px solid black; }
+.imgsen:hover { transform: scale(1.1); border: 5px solid blue; }
+#imgok { transform: scale(1.1); border: 5px solid green; }
+#imgno { transform: scale(0.6); border: 3px solid red; }
+}
+</style>
+</head>
+<body onload="start()">
+    <script type="text/javascript">
+ var tableau_senateurs = [];
+ var tableau_images = [];
+ var tableau_sexes = [];
+ var img0, nom0 = "";
+ var bonrep = 0;
+ var score = 0;
+ var scoremax = 0;
+ 
+//refactoring
+ function elt(nom_obj)
+ {
+	return document.getElementById(nom_obj);
+ }
+ 
+ function xval(xmlelt)
+ {
+	return xmlelt.childNodes[0].nodeValue;
+ }
+
+ function id2img(id)
+ {
+	return "http://www.senat.fr/senimg/" + id + ".jpg";
+ }
+ 
+ function montre(nom_obj) { elt(nom_obj).style.display = ""; }
+ 
+ function cache(nom_obj) { elt(nom_obj).style.display = "none"; }
+
+//////////////////////////
+ 
+ function start()
+ {
+//	loadJSON('https://data.senat.fr/data/senateurs/ODSEN_GENERAL.json',
+//         function(data) { console.log(data); },
+//         function(xhr) { console.error(xhr); }
+//	);
+  ajax("https://www.nossenateurs.fr/senateurs/enmandat/xml", parsing);  
+}
+
+
+ function parsing(texte)
+ {
+	var parser = new DOMParser();
+	var xmlDoc = parser.parseFromString(texte,"text/xml");
+	tableau_senateurs = xmlDoc.getElementsByTagName("nom");
+	tableau_images = xmlDoc.getElementsByTagName("id_institution");
+	tableau_sexes = xmlDoc.getElementsByTagName("sexe");
+	elt("etat").innerHTML = "";
+	montre("choix_jeu");
+ }
+
+var ajax=function(url,callback)
+{
+	var httpRequest=new XMLHttpRequest();
+	if (!httpRequest){return false;}
+	httpRequest.onreadystatechange=function()
+	{
+		try {
+			if (httpRequest.readyState===XMLHttpRequest.DONE && httpRequest.status===200)
+			{
+				callback(httpRequest.responseText);
+			}
+		} catch(e){}
+	}
+	httpRequest.open('GET',url);
+	httpRequest.send();
+	//return true;
+}
+
+
+
+ function launch(numjeu)
+ {
+	cache("choix_jeu");
+	montre("quit");
+	montre("score");
+	if (numjeu==1)
+	{
+		montre("jeu1");
+		jeu1(-1);
+	}
+	else//numjeu==2
+	{
+	montre("jeu2");
+	jeu2(-1);
+	}
+ }
+ 
+ function quit()
+ {
+	cache("quit");
+	cache("jeu1");
+	cache("jeu2");
+	montre("choix_jeu");
+ }
+ 
+ function jeu1(val)
+ {
+	cache("nomok");
+	cache("nomno");
+ 
+	//val : -1 pour initialisation
+	if (val>-1)
+	{
+		scoremax = scoremax + 1;
+		if (val==bonrep)
+		{
+			score = score + 1;
+		}
+	}
+	else
+	{
+		score = 0;
+		scoremax = 0;
+	}
+	elt("score").innerHTML= "SCORE = " + score + "/ " + scoremax;
+	
+	if (scoremax>=20)
+	{		
+		cache("jeu1");
+		montre("choix_jeu");
+		cache("quit");
+	    elt("score").innerHTML= "SCORE FINAL = " + score + "/ " + scoremax;
+		return;
+	}
+	
+	var n = tableau_senateurs.length;
+	
+	var num1 = Math.floor(n*Math.random());
+	var sexeref = xval(tableau_sexes[num1]);
+	var num2 = Math.floor(n*Math.random());
+	var sexe = xval(tableau_sexes[num2]);
+	while ((num2==num1) || (sexe!=sexeref))
+	{
+		num2 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num2]);
+	}
+	var num3 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num3]);
+	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
+	{
+		num3 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num3]);
+	}
+	var num4 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num4]);
+	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
+	{
+		num4 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num4]);
+	}
+	var num5 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num5]);
+	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
+	{
+		num5 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num5]);
+	}
+	//5 fausses réponses **différentes**
+	elt("nom1").innerHTML= xval(tableau_senateurs[num1]);
+	elt("nom2").innerHTML= xval(tableau_senateurs[num2]);
+	elt("nom3").innerHTML= xval(tableau_senateurs[num3]);
+	elt("nom4").innerHTML= xval(tableau_senateurs[num4]);
+	elt("nom5").innerHTML= xval(tableau_senateurs[num5]);
+	//écrasement avec la bonne réponse à un endroit au hasard
+	var vnum = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[vnum]);
+	while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
+	{
+		vnum = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[vnum]);
+	}	
+	bonrep = Math.floor(5*Math.random())+1;
+	elt("img0").src = id2img(xval(tableau_images[vnum]));
+	var varnom = "nom" + bonrep;
+	elt(varnom).innerHTML = xval(tableau_senateurs[vnum]);
+	elt("nomok").innerHTML = elt(varnom).innerHTML;
+	
+	montre("nom1");
+	montre("nom2");
+	montre("nom3");
+	montre("nom4");
+	montre("nom5");
+ }
+ 
+ function verif1(rep)
+ {
+	cache("nom1");
+	cache("nom2");
+	cache("nom3");
+	cache("nom4");
+	cache("nom5");
+	montre("nomok");
+	var delai = 700;
+	if (rep!==bonrep) {
+		delai = 3000;
+		elt("nomno").innerHTML = elt("nom"+rep).innerHTML;
+		montre("nomno");
+	}
+	setTimeout(function(){ jeu1(rep); }, delai);
+ }
+
+ function jeu2(val)
+ {
+ 	cache("imgok");
+	cache("imgno");
+ 
+	//val : -1 pour initialisation
+	if (val>-1)
+	{
+		scoremax = scoremax + 1;
+		if (val==bonrep)
+		{
+			score = score + 1;
+		}
+	}
+	else
+	{
+		score = 0;
+		scoremax = 0;
+	}
+	elt("score").innerHTML= "SCORE = " + score + "/ " + scoremax;
+	
+	if (scoremax>=20)
+	{		
+		cache("jeu2");
+		montre("choix_jeu");
+		cache("quit");
+		elt("score").innerHTML= "SCORE FINAL = " + score + "/ " + scoremax;
+		return;
+	}
+	
+	var n = tableau_senateurs.length;
+	
+	var num1 = Math.floor(n*Math.random());
+	var sexeref = xval(tableau_sexes[num1]);
+	var num2 = Math.floor(n*Math.random());
+	var sexe = xval(tableau_sexes[num2]);
+	while (num2==num1 || (sexe!=sexeref))
+	{
+		num2 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num2]);
+	}
+	var num3 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num3]);
+	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
+	{
+		num3 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num3]);
+	}
+	var num4 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num4]);
+	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
+	{
+		num4 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num4]);
+	}
+	var num5 = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[num5]);
+	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
+	{
+		num5 = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[num5]);
+	}
+	//5 fausses réponses **différentes**
+	elt("img1").src = id2img(xval(tableau_images[num1]));
+	elt("img2").src = id2img(xval(tableau_images[num2]));
+	elt("img3").src = id2img(xval(tableau_images[num3]));
+	elt("img4").src = id2img(xval(tableau_images[num4]));
+	elt("img5").src = id2img(xval(tableau_images[num5]));
+
+	//écrasement avec la bonne réponse à un endroit au hasard
+	var vnum = Math.floor(n*Math.random());
+	sexe = xval(tableau_sexes[vnum]);
+	while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
+	{
+		vnum = Math.floor(n*Math.random());
+		sexe = xval(tableau_sexes[vnum]);
+	}	
+	bonrep = Math.floor(5*Math.random())+1;
+	elt("nom0").innerHTML= xval(tableau_senateurs[vnum]);
+	var varimg = "img" + bonrep;
+	elt(varimg).src = id2img(xval(tableau_images[vnum]));
+	elt("imgok").src = elt(varimg).src;
+	
+	montre("img1");
+	montre("img2");
+	montre("img3");
+	montre("img4");
+	montre("img5");
+ }
+ 
+ function verif2(rep)
+ {
+ 	cache("img1");
+	cache("img2");
+	cache("img3");
+	cache("img4");
+	cache("img5");
+	montre("imgok");
+	var delai = 700;
+	if (rep!==bonrep) {
+		delai = 3000;
+		elt("imgno").src = elt("img"+rep).src;
+		montre("imgno");
+	}
+	setTimeout(function(){ jeu2(rep); }, delai);
+ }
+
+</script>
+<BR>
+<div id="etat">
+<P align="center"><!--img src="loader.gif" align="center"-->
+<img align="center"                
+src='data:image/jpeg;base64, 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'/>
+Chargement des informations relatives aux sénateurs...</p>
+
+</div> <!--/etat-->
+<BR>
+<div id="choix_jeu" style="display:none">
+<div id="c_jeu1" onclick="launch(1)" style="cursor:pointer">Jeu 1 : Quel nom ?</div>
+<div id="c_jeu2" onclick="launch(2)" style="cursor:pointer">Jeu 2 : Quelle photo ?</div>
+</div>
+<div id="score" style="border:solid; color:blue; text-color:red; display:none;">SCORE</div>
+<div id="jeu1" style="display:none">
+<img id="img0" border="1" spacing="5" style="cursor:not-allowed">
+<div id="nom1" class="nomsen" onclick="verif1(1);"></div>
+<div id="nom2" class="nomsen" onclick="verif1(2);"></div>
+<div id="nom3" class="nomsen" onclick="verif1(3);"></div>
+<div id="nom4" class="nomsen" onclick="verif1(4);"></div>
+<div id="nom5" class="nomsen" onclick="verif1(5);"></div>
+<div id="nomok"></div>
+<div id="nomno"></div>
+</div> <!--/jeu1-->
+<div id="jeu2" style="display:none">
+<div id="nom0"></div>
+<BR><BR>
+<img id="img1" class="imgsen" onclick="verif2(1);">
+<img id="img2" class="imgsen" onclick="verif2(2);">
+<img id="img3" class="imgsen" onclick="verif2(3);">
+<img id="img4" class="imgsen" onclick="verif2(4);">
+<img id="img5" class="imgsen" onclick="verif2(5);">
+<img id="imgok">
+<img id="imgno">
+</div> <!--/jeu2-->
+<BR>
+<div id="quit" style="display:none; cursor:pointer; background-color:red; color:white"
+onclick="quit()">Abandonner</A></div>
+<div id="version" style="position:absolute; bottom:0;">Version 0.001</div>
+</body>
+</html>
