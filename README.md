@@ -1,13 +1,13 @@
 # mes_sen
-MES SEN : a quiz game about french senators.
-
-Data extracted from https://www.nossenateurs.fr/ (see https://github.com/regardscitoyens/nosdeputes.fr/blob/master/doc/api.md)
-Personnal work (hobby).
-
------
-MES SEN : un jeu de quiz sur les sénatrices et sénateurs (France).
-
-Données récupérées sur https://www.nossenateurs.fr (cf. https://github.com/regardscitoyens/nosdeputes.fr/blob/master/doc/api.md)
-Travail personnel (loisirs).
------
+MES SEN : a quiz game about french senators.<BR>
+<BR>
+Data extracted from https://www.nossenateurs.fr/ (see https://github.com/regardscitoyens/nosdeputes.fr/blob/master/doc/api.md)<BR>
+Personnal work (hobby).<BR>
+<BR>
+-----<BR>
+MES SEN : un jeu de quiz sur les sénatrices et sénateurs (France).<BR>
+<BR>
+Données récupérées sur https://www.nossenateurs.fr (cf. https://github.com/regardscitoyens/nosdeputes.fr/blob/master/doc/api.md)<BR>
+Travail personnel (loisirs).<BR>
+-----<BR>
 http://gjandot.free.fr/mes_sen/
