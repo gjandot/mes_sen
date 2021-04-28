@@ -1,13 +1,26 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="UTF-8">
+<!--TODO
+* empêcher le retour d'une proposition
+* indication mauvaise réponse
+* plusieurs difficultés (nombres de propositions)
+* photos non sénateurs ?
+* utilisation du JSON (nossenateurs vs senat)
+* délai de réponse ?
+* score sous forme d'étoiles (0 à 3) ?
+* recherche de combinaisons spéciales (prénoms identiques...)
+* jeu 3 : Quel Groupe ?
+* vérifier/attendre le chargement des images ?
+-->
 <title>Mes-Sen</title>
 <style>
-.nomsen {color: black; font-size:100%; cursor:pointer; }
+.nomsen {color:black; font-size:100%; cursor:pointer; }
 .nomsen:hover { color:blue; font-size:120%; }
 #nomok { color:green; font-size:130%; }
 #nomno { color:red; font-size:110%; text-decoration : line-through; }
 
+#nom0 {text-decoration:bold; font-size:120%; cursor:pointer; }
 .imgsen {cursor:pointer; spacing:9; border: 1px solid black; }
 .imgsen:hover { transform: scale(1.1); border: 5px solid blue; }
 #imgok { transform: scale(1.1); border: 5px solid green; }
@@ -15,8 +28,8 @@
 }
 </style>
 </head>
-<body onload="start()">
-    <script type="text/javascript">
+<body onload="start()" style="background-color:lightgrey">
+<script type="text/javascript">
  var tableau_senateurs = [];
  var tableau_images = [];
  var tableau_sexes = [];
@@ -25,25 +38,12 @@
  var score = 0;
  var scoremax = 0;
  
-//refactoring
- function elt(nom_obj)
- {
-	return document.getElementById(nom_obj);
- }
- 
- function xval(xmlelt)
- {
-	return xmlelt.childNodes[0].nodeValue;
- }
-
- function id2img(id)
- {
-	return "http://www.senat.fr/senimg/" + id + ".jpg";
- }
- 
- function montre(nom_obj) { elt(nom_obj).style.display = ""; }
- 
- function cache(nom_obj) { elt(nom_obj).style.display = "none"; }
+// refactoring / helpers
+ function elt(nom_obj)  { return document.getElementById(nom_obj); }
+ function xval(xmlelt)  { return xmlelt.childNodes[0].nodeValue; }
+ function id2img(id)    { return "http://www.senat.fr/senimg/" + id + ".jpg"; }
+ function show(nom_obj) { elt(nom_obj).style.display = ""; }
+ function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
 
 //////////////////////////
  
@@ -59,13 +59,21 @@
 
  function parsing(texte)
  {
+	hide("loading");
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(texte,"text/xml");
 	tableau_senateurs = xmlDoc.getElementsByTagName("nom");
 	tableau_images = xmlDoc.getElementsByTagName("id_institution");
 	tableau_sexes = xmlDoc.getElementsByTagName("sexe");
-	elt("etat").innerHTML = "";
-	montre("choix_jeu");
+	if (tableau_senateurs.length < 200)
+	{
+		elt("error").innerHTML = "Nombre de sénateurs téléchargés insuffisant.";
+		show("error");
+	}
+	else
+	{
+		show("game_select");
+	}
  }
 
 var ajax=function(url,callback)
@@ -90,33 +98,34 @@ var ajax=function(url,callback)
 
  function launch(numjeu)
  {
-	cache("choix_jeu");
-	montre("quit");
-	montre("score");
+	hide("game_select");
+	show("quit");
+	show("score");
 	if (numjeu==1)
 	{
-		montre("jeu1");
-		jeu1(-1);
+		show("game1");
+		game1(-1);
 	}
 	else//numjeu==2
 	{
-	montre("jeu2");
-	jeu2(-1);
+	show("game2");
+	game2(-1);
 	}
  }
  
  function quit()
  {
-	cache("quit");
-	cache("jeu1");
-	cache("jeu2");
-	montre("choix_jeu");
+	hide("quit");
+	hide("game1");
+	hide("game2");
+	hide("score");
+	show("game_select");
  }
  
- function jeu1(val)
+ function game1(val)
  {
-	cache("nomok");
-	cache("nomno");
+	hide("nomok");
+	hide("nomno");
  
 	//val : -1 pour initialisation
 	if (val>-1)
@@ -132,19 +141,19 @@ var ajax=function(url,callback)
 		score = 0;
 		scoremax = 0;
 	}
-	elt("score").innerHTML= "SCORE = " + score + "/ " + scoremax;
+	elt("score").innerHTML = "PHOTO " + (scoremax+1) + "/20 - ";
+	elt("score").innerHTML += "SCORE = " + score + "/ " + scoremax;
 	
 	if (scoremax>=20)
 	{		
-		cache("jeu1");
-		montre("choix_jeu");
-		cache("quit");
-	    elt("score").innerHTML= "SCORE FINAL = " + score + "/ " + scoremax;
+		hide("game1");
+		show("game_select");
+		hide("quit");
+	    elt("score").innerHTML = "SCORE FINAL = " + score + "/ " + scoremax;
 		return;
 	}
-	
+		
 	var n = tableau_senateurs.length;
-	
 	var num1 = Math.floor(n*Math.random());
 	var sexeref = xval(tableau_sexes[num1]);
 	var num2 = Math.floor(n*Math.random());
@@ -195,34 +204,34 @@ var ajax=function(url,callback)
 	elt(varnom).innerHTML = xval(tableau_senateurs[vnum]);
 	elt("nomok").innerHTML = elt(varnom).innerHTML;
 	
-	montre("nom1");
-	montre("nom2");
-	montre("nom3");
-	montre("nom4");
-	montre("nom5");
+	show("nom1");
+	show("nom2");
+	show("nom3");
+	show("nom4");
+	show("nom5");
  }
  
  function verif1(rep)
  {
-	cache("nom1");
-	cache("nom2");
-	cache("nom3");
-	cache("nom4");
-	cache("nom5");
-	montre("nomok");
+	hide("nom1");
+	hide("nom2");
+	hide("nom3");
+	hide("nom4");
+	hide("nom5");
+	show("nomok");
 	var delai = 700;
 	if (rep!==bonrep) {
 		delai = 3000;
 		elt("nomno").innerHTML = elt("nom"+rep).innerHTML;
-		montre("nomno");
+		show("nomno");
 	}
-	setTimeout(function(){ jeu1(rep); }, delai);
+	setTimeout(function(){ game1(rep); }, delai);
  }
 
- function jeu2(val)
+ function game2(val)
  {
- 	cache("imgok");
-	cache("imgno");
+ 	hide("imgok");
+	hide("imgno");
  
 	//val : -1 pour initialisation
 	if (val>-1)
@@ -238,24 +247,24 @@ var ajax=function(url,callback)
 		score = 0;
 		scoremax = 0;
 	}
-	elt("score").innerHTML= "SCORE = " + score + "/ " + scoremax;
+	elt("score").innerHTML = "NOM " + (scoremax+1) + "/20 - ";
+	elt("score").innerHTML += "SCORE = " + score + "/ " + scoremax;
 	
 	if (scoremax>=20)
 	{		
-		cache("jeu2");
-		montre("choix_jeu");
-		cache("quit");
-		elt("score").innerHTML= "SCORE FINAL = " + score + "/ " + scoremax;
+		hide("game2");
+		show("game_select");
+		hide("quit");
+		elt("score").innerHTML = "SCORE FINAL = " + score + "/ " + scoremax;
 		return;
 	}
 	
 	var n = tableau_senateurs.length;
-	
 	var num1 = Math.floor(n*Math.random());
 	var sexeref = xval(tableau_sexes[num1]);
 	var num2 = Math.floor(n*Math.random());
 	var sexe = xval(tableau_sexes[num2]);
-	while (num2==num1 || (sexe!=sexeref))
+	while ((num2==num1) || (sexe!=sexeref))
 	{
 		num2 = Math.floor(n*Math.random());
 		sexe = xval(tableau_sexes[num2]);
@@ -302,33 +311,33 @@ var ajax=function(url,callback)
 	elt(varimg).src = id2img(xval(tableau_images[vnum]));
 	elt("imgok").src = elt(varimg).src;
 	
-	montre("img1");
-	montre("img2");
-	montre("img3");
-	montre("img4");
-	montre("img5");
+	show("img1");
+	show("img2");
+	show("img3");
+	show("img4");
+	show("img5");
  }
  
  function verif2(rep)
  {
- 	cache("img1");
-	cache("img2");
-	cache("img3");
-	cache("img4");
-	cache("img5");
-	montre("imgok");
+ 	hide("img1");
+	hide("img2");
+	hide("img3");
+	hide("img4");
+	hide("img5");
+	show("imgok");
 	var delai = 700;
 	if (rep!==bonrep) {
 		delai = 3000;
 		elt("imgno").src = elt("img"+rep).src;
-		montre("imgno");
+		show("imgno");
 	}
-	setTimeout(function(){ jeu2(rep); }, delai);
+	setTimeout(function(){ game2(rep); }, delai);
  }
 
 </script>
 <BR>
-<div id="etat">
+<div id="loading">
 <P align="center"><!--img src="loader.gif" align="center"-->
 <img align="center"                
 src='data:image/jpeg;base64, R0lGODlhMAAwAPYAAN3d3QAAANDQ0MTExLGxsZeXl7a2ttnZ2c
@@ -458,14 +467,15 @@ JD1EVhIkn7g+1Mqtu7Ko6SlMPgIpMSVdScqtiT60iamUBpMoRbsWMMitbi4TZK8CPlQYt79qK8iU0o1
 KDzDcRruqdIrAuu2inHAI718DkHjvvvz220ggADsAAAAAAAAAAAA='/>
 Chargement des informations relatives aux sénateurs...</p>
 
-</div> <!--/etat-->
+</div> <!--/loading-->
 <BR>
-<div id="choix_jeu" style="display:none">
-<div id="c_jeu1" onclick="launch(1)" style="cursor:pointer">Jeu 1 : Quel nom ?</div>
-<div id="c_jeu2" onclick="launch(2)" style="cursor:pointer">Jeu 2 : Quelle photo ?</div>
+<div id="game_select" style="display:none">
+<div id="c_game1" onclick="launch(1)" class="nomsen">Jeu 1 : Quel nom ?</div>
+<div id="c_game2" onclick="launch(2)" class="nomsen">Jeu 2 : Quelle photo ?</div>
 </div>
-<div id="score" style="border:solid; color:blue; text-color:red; display:none;">SCORE</div>
-<div id="jeu1" style="display:none">
+<div id="score" style="border:solid; color:lightblue; background-color:blue;
+		display:none; width:20%; margin:9px;">SCORE</div>
+<div id="game1" style="display:none">
 <img id="img0" border="1" spacing="5" style="cursor:not-allowed">
 <div id="nom1" class="nomsen" onclick="verif1(1);"></div>
 <div id="nom2" class="nomsen" onclick="verif1(2);"></div>
@@ -474,8 +484,8 @@ Chargement des informations relatives aux sénateurs...</p>
 <div id="nom5" class="nomsen" onclick="verif1(5);"></div>
 <div id="nomok"></div>
 <div id="nomno"></div>
-</div> <!--/jeu1-->
-<div id="jeu2" style="display:none">
+</div> <!--/game1-->
+<div id="game2" style="display:none">
 <div id="nom0"></div>
 <BR><BR>
 <img id="img1" class="imgsen" onclick="verif2(1);">
@@ -485,10 +495,12 @@ Chargement des informations relatives aux sénateurs...</p>
 <img id="img5" class="imgsen" onclick="verif2(5);">
 <img id="imgok">
 <img id="imgno">
-</div> <!--/jeu2-->
+</div> <!--/game2-->
 <BR>
-<div id="quit" style="display:none; cursor:pointer; background-color:red; color:white"
-onclick="quit()">Abandonner</A></div>
-<div id="version" style="position:absolute; bottom:0;">Version 0.001</div>
+<button id="quit" style="display:none; cursor:pointer; background-color:orange; color:white;"
+		onclick="quit()">Abandonner</button>
+<div id="error" style="display:none; color:red; border:solid; text-align:center; margin:0 auto; width:33%;">Erreur</div>
+<div id="version" style="position:absolute; bottom:0;"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.002</A></div>
+<!-- G. JANDOT / 28/04/2021 -->
 </body>
 </html>
