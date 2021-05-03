@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<!--TODO
+<!--IDs
 * numéro de photo sous forme d'une barre de progression
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs difficultés (nombres de propositions)
@@ -11,7 +11,9 @@
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * jeu 3 : Quel Groupe ?
 * vérifier/attendre le chargement des images ?
-* détection des coupures réseau vs téléchargement de toutes les images ?
+* prétéléchargement de toutes les images ?
+* problématique des images absentes (début de mandat)
+*/
 -->
 <title>Mes-Sen</title>
 <style>
@@ -38,8 +40,7 @@
 
 #quit { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; position:fixed; top:500px; cursor:pointer; }
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; }
-#version a { font-size:0.8em; color:#444444; position:fixed; bottom:5px; text-decoration:none; }
-</style>
+#version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; text-decoration:none; }</style>
 </head>
 <body onload="start()" style="background-color:black">
 <script type="text/javascript">
@@ -47,8 +48,18 @@
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
- const ERR_DOWNLOAD = "Problème de téléchargement.";
- var tableau_senateurs = [];
+ const DELAY_SHORT = 900;
+ const DELAY_LONG = 4000;
+ const NB_MAX_PROP = 20;
+ const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
+ const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
+ //SCORE_3 = NB_MAX_PROP
+ const NBSP = "&nbsp;";
+ const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
+ const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
+
+ var tableau_xml_noms = [];
+ var tableau_noms = [];
  var tableau_images = [];
  var tableau_sexes = [];
  var tableau_bonrep = []; //indices:0..4
@@ -56,15 +67,6 @@
  var bonrep = 0;
  var score = 0;
  var scoremax = 0;
- const DELAY_SHORT = 900;
- const DELAY_LONG = 4000;
- const NB_MAX_PROP = 20;
- const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
- const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
- const NBSP = "&nbsp;";
- const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
- const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
- //SCORE_3 = NB_MAX_PROP
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
@@ -84,22 +86,40 @@
 
  function parsing(texte)
  {
-	hide("loading");
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(texte,"text/xml");
 	
-	tableau_senateurs = xmlDoc.getElementsByTagName("nom");
+	tableau_xmlnoms = xmlDoc.getElementsByTagName("nom");
 	tableau_images = xmlDoc.getElementsByTagName("id_institution");
 	tableau_sexes = xmlDoc.getElementsByTagName("sexe");
-	if (tableau_senateurs.length < 200)
+
+	if (tableau_xmlnoms.length < 200)
 	{
 		elt("error").innerHTML = "Nombre de sénateurs téléchargés insuffisant.";
 		show("error");
 	}
 	else
 	{
+		//normalisation des noms (certains sont en entièrement en majuscules)
+		for (i=0; i<tableau_xmlnoms.length; i++)
+		{
+			var mots = xval(tableau_xmlnoms[i]).split(" ");
+			//nom=dernier mot (sans éventuelle particule)
+			var last = mots.length-1;
+			mots[last] = mots[last].toLowerCase();
+			mots[last] = mots[last].charAt(0).toUpperCase() + mots[last].slice(1);
+			var nouvnom = "";
+			for (j=0; j<mots.length; j++)
+			{
+				nouvnom = nouvnom + mots[j] + " ";
+			}
+			tableau_noms.push(nouvnom.trim());
+			console.log(nouvnom.trim());
+		}
+
 		show("messen");
 	}
+	hide("loading");
  }
 
  function ajax(url,callback)
@@ -193,7 +213,7 @@
 		return;
 	}
 		
-	var n = tableau_senateurs.length;
+	var n = tableau_noms.length;
 	var num1 = Math.floor(n*Math.random());
 	var sexeref = xval(tableau_sexes[num1]);
 	var num2 = Math.floor(n*Math.random());
@@ -225,11 +245,11 @@
 		sexe = xval(tableau_sexes[num5]);
 	}
 	//5 fausses réponses **différentes**
-	elt("nom1").innerHTML= xval(tableau_senateurs[num1]);
-	elt("nom2").innerHTML= xval(tableau_senateurs[num2]);
-	elt("nom3").innerHTML= xval(tableau_senateurs[num3]);
-	elt("nom4").innerHTML= xval(tableau_senateurs[num4]);
-	elt("nom5").innerHTML= xval(tableau_senateurs[num5]);
+	elt("nom1").innerHTML= tableau_noms[num1];
+	elt("nom2").innerHTML= tableau_noms[num2];
+	elt("nom3").innerHTML= tableau_noms[num3];
+	elt("nom4").innerHTML= tableau_noms[num4];
+	elt("nom5").innerHTML= tableau_noms[num5];
 	tableau_bonrep[0] = num1;
 	tableau_bonrep[1] = num2;
 	tableau_bonrep[2] = num3;
@@ -262,7 +282,7 @@
 	bonrep = Math.floor(5*Math.random())+1;
 	elt("img0").src = id2img(xval(tableau_images[vnum]));
 	var varnom = "nom" + bonrep;
-	elt(varnom).innerHTML = xval(tableau_senateurs[vnum]);
+	elt(varnom).innerHTML = tableau_noms[vnum];
 	elt("nomok").innerHTML = elt(varnom).innerHTML;	
 	show("nom1");
 	show("nom2");
@@ -327,7 +347,7 @@
 		return;
 	}
 	
-	var n = tableau_senateurs.length;
+	var n = tableau_noms.length;
 	var num1 = Math.floor(n*Math.random());
 	var sexeref = xval(tableau_sexes[num1]);
 	var num2 = Math.floor(n*Math.random());
@@ -394,7 +414,7 @@
 	tableau_pastprop.push(vnum);
 	
 	bonrep = Math.floor(5*Math.random())+1;
-	elt("nom0").innerHTML= xval(tableau_senateurs[vnum]);
+	elt("nom0").innerHTML= tableau_noms[vnum];
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(xval(tableau_images[vnum]));
 	elt("imgok").src = elt(varimg).src;
@@ -418,7 +438,7 @@
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
 		show("imgno");
-		elt("nomindic").innerHTML = xval(tableau_senateurs[tableau_bonrep[rep-1]]);
+		elt("nomindic").innerHTML = tableau_noms[tableau_bonrep[rep-1]];
 		show("nomindic");
 	}
 	setTimeout(function(){ game2(rep); }, delay);
@@ -436,8 +456,10 @@ Téléchargement des informations relatives aux sénateurs...</p>
 <div id="score" style="display:none"></div>
 
 <div id="game_select">
-<div id="c_game1" onclick="launch(1)" class="gamesel">Quel nom&nbsp;?</div>
-<div id="c_game2" onclick="launch(2)" class="gamesel">Quelle photo&nbsp;?</div>
+<div id="c_game1" onclick="launch(1)" class="gamesel"
+		title="Pour 1 nom, 5 photos. Il faut trouver la bonne.">Quel nom&nbsp;?</div>
+<div id="c_game2" onclick="launch(2)" class="gamesel"
+	title="Pour 1 photo, 5 noms. Il faut trouver le bon.">Quelle photo&nbsp;?</div>
 </div> <!--/game_select-->
 
 <div id="game1" style="display:none">
@@ -466,7 +488,7 @@ Téléchargement des informations relatives aux sénateurs...</p>
 </div> <!--/messen-->
 
 <div id="error" style="display:none"></div>
-<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.005</A></div>
-<!-- G. JANDOT / 02/05/2021 -->
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.006</A></div>
+<!-- G. JANDOT / 04/05/2021 -->
 </body>
 </html>
