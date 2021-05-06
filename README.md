@@ -1,5 +1,5 @@
 # mes_sen
-MES SEN : a quiz game about active french senators.<BR>
+MES SEN : a quiz game about current french senators.<BR>
 http://gjandot.free.fr/mes_sen/<BR>
 <BR>
 Data extracted from https://www.nossenateurs.fr/ (see https://github.com/regardscitoyens/nosdeputes.fr/blob/master/doc/api.md)<BR>
