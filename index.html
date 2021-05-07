@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <!--IDs
+* normalisation des noms : pb noms composés avec trait d'union (Paoli-Gagin)
 * numéro de photo sous forme d'une barre de progression
+* largeur zone noms
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs difficultés (nombres de propositions)
 * photos non sénateurs (secret guest stars)
+* noms inventés
+* prénoms changés
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
-* jeu 3 : Quel Groupe ?
 * vérifier/attendre le chargement des images ?
 * prétéléchargement de toutes les images ?
 * problématique des images absentes (début de mandat)
@@ -29,7 +32,7 @@
 .nomsen:hover { font-size:1.4em; color:yellow; }
 #nomok { font-size:1.5em; color:#44FF44; }
 #nomno { font-size:1.1em; color:#FF8888; }
-#imgindic { height:90px; width:62px; border:3px solid red; border-radius:9px;}
+#imgindic { height:90px; width:62px; border:3px solid red; border-radius:9px; }
 
 #nom0 { font-size:1.4em; color:white; margin-top:25px; padding-bottom:25px; cursor:pointer; }
 .imgsen { height:225px; width:155px; border:1px solid black; border-radius:9px; margin:3px; cursor:pointer; }
@@ -38,9 +41,18 @@
 #imgno { height:90px; width:62px; border:3px solid red; margin-left:9px; border-radius:9px; }
 #nomindic { font-size:1.1em; color:#FF8888; }
 
+#trombi { color:white; }
+.imgtrombi { height:90px; width:62px; border-radius:9px; }
+.senelt { border:1px solid grey; width:22%; padding: 3px; margin:9px; box-shadow: 3px 3px 5px white; display:inline flex; }
+.senelt a { color:white; text-decoration:none; }
+.chactif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
+.chinactif { color:red; text-decoration:line-through; cursor:pointer; }
+
+
 #quit { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; position:fixed; top:500px; cursor:pointer; }
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; }
-#version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; text-decoration:none; }</style>
+#version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:55px; text-decoration:none; }
+</style>
 </head>
 <body onload="start()" style="background-color:black">
 <script type="text/javascript">
@@ -54,34 +66,59 @@
  const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
  const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
  //SCORE_3 = NB_MAX_PROP
+ const NO_GROUP = "-TOUS-";
+ const NO_FILTER = "-filtre-"; //lowercase
  const NBSP = "&nbsp;";
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
 
  var tableau_xml_noms = [];
+ var tableau_tri_noms = [];
  var tableau_noms = [];
- var tableau_images = [];
+ var tableau_ids = [];
  var tableau_sexes = [];
+ var tableau_groupes = [];
  var tableau_bonrep = []; //indices:0..4
  var tableau_pastprop = [];
+ var tableau_sengrp = [];
+ var tableau_groupes = [];
+ var tableau_dpts = [];
+ var tableau_senateurs = []; //objets "senateur"
+ // objet senateur:
+ // .nomcomplet
+ // .nomtri
+ // .id
+ // .sexe
+ // .groupe
+ // .dpt
+
  var bonrep = 0;
  var score = 0;
  var scoremax = 0;
+ var trombi_h = true;
+ var trombi_f = true;
+
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function xval(xmlelt)  { return xmlelt.childNodes[0].nodeValue; }
- function id2img(id)    { return "http://www.senat.fr/senimg/" + id + ".jpg"; }
+ function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
+ function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"}
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
+ 
+ function compare_senateurs(sen1,sen2)
+ {
+	 return (sen1.nomtri>sen2.nomtri); //accents ?
+ }
 
 //////////////////////////
  
  function start()
  {
-  ajax("https://www.nossenateurs.fr/senateurs/enmandat/xml", parsing);
-  //https://www.nossenateurs.fr/senateurs/enmandat/json
-  //https://data.senat.fr/data/senateurs/ODSEN_GENERAL.json
+	  ajax("https://www.nossenateurs.fr/senateurs/enmandat/xml", parsing);
+	  //https://www.nossenateurs.fr/senateurs/enmandat/json
+	  //https://data.senat.fr/data/senateurs/ODSEN_GENERAL.json
  }
 
  function parsing(texte)
@@ -90,8 +127,11 @@
 	var xmlDoc = parser.parseFromString(texte,"text/xml");
 	
 	tableau_xmlnoms = xmlDoc.getElementsByTagName("nom");
-	tableau_images = xmlDoc.getElementsByTagName("id_institution");
+	tableau_tri_noms = xmlDoc.getElementsByTagName("nom_de_famille");
+	tableau_ids = xmlDoc.getElementsByTagName("id_institution");
 	tableau_sexes = xmlDoc.getElementsByTagName("sexe");
+	tableau_sengrp = xmlDoc.getElementsByTagName("groupe_sigle");
+	tableau_dpts = xmlDoc.getElementsByTagName("nom_circo");
 
 	if (tableau_xmlnoms.length < 200)
 	{
@@ -100,10 +140,11 @@
 	}
 	else
 	{
-		//normalisation des noms (certains sont en entièrement en majuscules)
+		//normalisation des noms (certains sont en entièrement en majuscules dans les données téléchargées)
 		for (i=0; i<tableau_xmlnoms.length; i++)
 		{
-			var mots = xval(tableau_xmlnoms[i]).split(" ");
+			//doesn't work properly//
+			/*var mots = xval(tableau_xmlnoms[i]).split(" ");
 			//nom=dernier mot (sans éventuelle particule)
 			var last = mots.length-1;
 			mots[last] = mots[last].toLowerCase();
@@ -113,10 +154,43 @@
 			{
 				nouvnom = nouvnom + mots[j] + " ";
 			}
-			tableau_noms.push(nouvnom.trim());
-			console.log(nouvnom.trim());
+			nouvnom = nouvnom.trim(); //retrait du dernier espace*/
+			nouvnom = xval(tableau_xmlnoms[i]);
+			tableau_noms.push(nouvnom);
+			
+			//pour le trombinoscope, création d'un tableau d'objets de type "senateur"
+			var senateur = new Object();
+			senateur.nomcomplet = nouvnom;
+			senateur.nomtri = xval(tableau_tri_noms[i]);
+			//normalisation du nom de famille
+			senateur.nomtri = (senateur.nomtri).toLowerCase(); //traitement des accents ?
+			senateur.sexe = xval(tableau_sexes[i]);
+			senateur.id = xval(tableau_ids[i]);
+			senateur.groupe = xval(tableau_sengrp[i]);
+			senateur.dpt = xval(tableau_dpts[i]);
+			tableau_senateurs.push(senateur);
+			if (tableau_groupes.indexOf(senateur.groupe)==-1)
+			{
+				tableau_groupes.push(senateur.groupe);
+			}
 		}
 
+		tableau_senateurs.sort(compare_senateurs);
+		var trombi = elt("listsen");
+		for (i=0; i<tableau_senateurs.length; i++)
+		{
+			trombi.innerHTML += "<div class=\"senelt\" id=\"" + tableau_senateurs[i].id + "\"><A HREF=\"" + id2url(tableau_senateurs[i].id) + "\" TARGET=\"_blank\"><img class=\"imgtrombi\" src=\""
+			+ id2img(tableau_senateurs[i].id) + "\">"+ tableau_senateurs[i].nomcomplet + "</A>&nbsp;"
+			+ tableau_senateurs[i].groupe + "&nbsp;(" + tableau_senateurs[i].dpt + ")</div>";
+		}
+		tableau_groupes.sort();
+		var grp = elt("selgrp");
+		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
+		for (i=0; i< tableau_groupes.length; i++)
+		{
+			grp.innerHTML += "<option value=\"" + tableau_groupes[i] + "\">" + tableau_groupes[i] + "</option>"
+		}
+		
 		show("messen");
 	}
 	hide("loading");
@@ -145,15 +219,22 @@
 	hide("game_select");
 	show("quit");
 	show("score");
-	if (numjeu==1)
-	{
-		show("game1");
-		game1(-1);
-	}
-	else//numjeu==2
-	{
-	show("game2");
-	game2(-1);
+	switch (numjeu) {
+		case 1:
+			show("game1");
+			game1(-1);
+			break
+		case 2:
+			show("game2");
+			game2(-1);
+			break;
+		case 3:
+			hide("messen");
+			trombi_h = true;
+			trombi_f = true;
+			elt("filtre").value = NO_FILTER;
+			show("trombi");
+			break;
 	}
  }
  
@@ -280,7 +361,7 @@
 	tableau_pastprop.push(vnum);
 
 	bonrep = Math.floor(5*Math.random())+1;
-	elt("img0").src = id2img(xval(tableau_images[vnum]));
+	elt("img0").src = id2img(xval(tableau_ids[vnum]));
 	var varnom = "nom" + bonrep;
 	elt(varnom).innerHTML = tableau_noms[vnum];
 	elt("nomok").innerHTML = elt(varnom).innerHTML;	
@@ -304,7 +385,7 @@
 		delay = DELAY_LONG;
 		elt("nomno").innerHTML = UTF8_CROSS_MARK + NBSP + elt("nom"+rep).innerHTML;
 		show("nomno");
-		elt("imgindic").src = id2img(xval(tableau_images[tableau_bonrep[rep-1]]));
+		elt("imgindic").src = id2img(xval(tableau_ids[tableau_bonrep[rep-1]]));
 		show("imgindic");
 	}
 	else
@@ -379,11 +460,11 @@
 		sexe = xval(tableau_sexes[num5]);
 	}
 	//5 fausses réponses **différentes**
-	elt("img1").src = id2img(xval(tableau_images[num1]));
-	elt("img2").src = id2img(xval(tableau_images[num2]));
-	elt("img3").src = id2img(xval(tableau_images[num3]));
-	elt("img4").src = id2img(xval(tableau_images[num4]));
-	elt("img5").src = id2img(xval(tableau_images[num5]));
+	elt("img1").src = id2img(xval(tableau_ids[num1]));
+	elt("img2").src = id2img(xval(tableau_ids[num2]));
+	elt("img3").src = id2img(xval(tableau_ids[num3]));
+	elt("img4").src = id2img(xval(tableau_ids[num4]));
+	elt("img5").src = id2img(xval(tableau_ids[num5]));
 	tableau_bonrep[0] = num1;
 	tableau_bonrep[1] = num2;
 	tableau_bonrep[2] = num3;
@@ -416,7 +497,7 @@
 	bonrep = Math.floor(5*Math.random())+1;
 	elt("nom0").innerHTML= tableau_noms[vnum];
 	var varimg = "img" + bonrep;
-	elt(varimg).src = id2img(xval(tableau_images[vnum]));
+	elt(varimg).src = id2img(xval(tableau_ids[vnum]));
 	elt("imgok").src = elt(varimg).src;
 	show("img1");
 	show("img2");
@@ -444,11 +525,91 @@
 	setTimeout(function(){ game2(rep); }, delay);
  }
 
+ function initfilter()
+ {
+	if (elt("filtre").value == NO_FILTER)
+	{
+		elt("filtre").value = "";
+	}
+ }
+
+ function majtrombi(action)
+ {
+	var filtre = elt("filtre").value.toLowerCase(); //perf
+	var filgrp = elt("selgrp").options[elt("selgrp").selectedIndex].text;
+	if (action==1)//hommes
+	{
+		trombi_h = !trombi_h;
+	}
+	if (action==2)//femmes
+	{
+		trombi_f = !trombi_f;
+	}
+	
+	if (trombi_h)
+	{
+		elt("hommes").className = "chactif";
+	}
+	else
+	{
+		elt("hommes").className = "chinactif";
+	}
+	if (trombi_f)
+	{
+		elt("femmes").className = "chactif";
+	}
+	else
+	{
+		elt("femmes").className = "chinactif";
+	}
+
+	for (i=0; i<tableau_senateurs.length; i++)
+	{
+		if (tableau_senateurs[i].sexe == "H")
+		{
+			if (trombi_h)
+			{
+				show(tableau_senateurs[i].id);
+			}
+			else
+			{
+				hide(tableau_senateurs[i].id);
+			}				
+		}
+		else //F
+		{
+			if (trombi_f)
+			{
+				show(tableau_senateurs[i].id);
+			}
+			else
+			{
+				hide(tableau_senateurs[i].id);
+			}
+		}
+		
+		if (filtre!= NO_FILTER && filtre!=""
+)
+		{
+			if ((!(tableau_senateurs[i].nomcomplet.toLowerCase()).includes(filtre)))
+			{
+				hide(tableau_senateurs[i].id);
+			}
+		}
+		if (filgrp != NO_GROUP)
+		{
+			if (tableau_senateurs[i].groupe != filgrp)
+			{
+				hide(tableau_senateurs[i].id);
+			}
+		}
+	}
+ }
 </script>
 <BR>
 <div id="loading">
-<P align="center"><img src="senanim.gif" style="vertical-align:middle" width="50" height="52" ALT="Logo">
-Téléchargement des informations relatives aux sénateurs...</p>
+<p align="center"><img src="senanim.gif" style="vertical-align:middle" width="50" height="52" ALT="Logo">
+Téléchargement et préparation des informations relatives aux sénateurs...</p>
 </div> <!--/loading-->
 
 <div id="messen" style="display:none">
@@ -457,9 +618,11 @@ Téléchargement des informations relatives aux sénateurs...</p>
 
 <div id="game_select">
 <div id="c_game1" onclick="launch(1)" class="gamesel"
-		title="Pour 1 nom, 5 photos. Il faut trouver la bonne.">Quel nom&nbsp;?</div>
+		title="Pour 1 photo, 5 noms. Il faut trouver le bon.">"Quel nom&nbsp;?"</div>
 <div id="c_game2" onclick="launch(2)" class="gamesel"
-	title="Pour 1 photo, 5 noms. Il faut trouver le bon.">Quelle photo&nbsp;?</div>
+	title="Pour 1 nom, 5 photos. Il faut trouver la bonne.">"Quelle photo&nbsp;?"</div>
+<div id="c_game3" onclick="launch(3)" class="gamesel"
+	title="Trombinoscope en cours de développement">Trombi</div>
 </div> <!--/game_select-->
 
 <div id="game1" style="display:none">
@@ -488,7 +651,17 @@ Téléchargement des informations relatives aux sénateurs...</p>
 </div> <!--/messen-->
 
 <div id="error" style="display:none"></div>
-<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.006</A></div>
-<!-- G. JANDOT / 04/05/2021 -->
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.007</A></div>
+<!-- G. JANDOT / 07/05/2021 -->
+<div id="trombi" style="display:none">
+<div>
+<span id="hommes" onclick="majtrombi(1)" class="chactif">Hommes</span>&nbsp;
+<span id="femmes" onclick="majtrombi(2)" class="chactif">Femmes</span>&nbsp;
+<select id="selgrp" onchange="majtrombi(0)"></select>
+<input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()">
+</div>
+<div id="listsen"></div>
+</div> <!--/trombi-->
+
 </body>
 </html>
