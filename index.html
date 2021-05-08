@@ -79,7 +79,9 @@
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
 
-  var tableau_senateurs = []; //objets "senateur"
+ var interval_ctrl;
+
+ var tableau_senateurs = []; //objets "senateur"
  // objet senateur:
  // .nomcomplet
  // .nomtri
@@ -180,7 +182,7 @@
 		
 		async_cpt = 0;
 		elt("loadinfo").innerHTML = "Préparation des données et téléchargement des photos..."
-		setInterval(fill_trombi, 0);
+		interval_ctrl = setInterval(fill_trombi, 0);
 	 }
  }
  
@@ -198,7 +200,7 @@
 	if (async_cpt>=tableau_senateurs.length)
 	{
 		hide("loading");
-		clearInterval();
+		clearInterval(interval_ctrl);
 		tableau_groupes.sort();
 		var grp = elt("selgrp");
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
@@ -676,7 +678,7 @@
 </div> <!--/messen-->
 
 <div id="error" style="display:none"></div>
-<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.008</A></div>
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.009</A></div>
 <!-- G. JANDOT / 08/05/2021 -->
 <div id="trombi" style="display:none">
 <div>
