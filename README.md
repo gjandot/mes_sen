@@ -9,5 +9,5 @@ Personnal work (hobby).<BR>
 MES SEN : jeux et trombiboscope interactif sur les sénatrices et sénateurs (France, mandats en cours).<BR>
 http://gjandot.free.fr/mes_sen/<BR>
 <BR>
-Données récupérées sur https://data.senat.fr la plateforme de données ouvertes du Sénat
+Données récupérées sur https://data.senat.fr la plateforme de données ouvertes du Sénat<BR>
 Travail personnel (loisir).<BR>
