@@ -50,7 +50,7 @@
 .senelt { color:white; text-decoration:none; border:1px solid grey; width:22%; padding: 3px; margin:9px; box-shadow: 3px 3px 5px white; display:inline flex; }
 .senelt:hover { background-color: #C80947; }
 .senelt a { color:white; text-decoration:none; }
-.sennom { font-size: 1.1em; font-weight: bold; margin-bottom: 20px; }
+.sennom { font-weight: bold; margin-bottom: 20px; }
 .sendpt { color: yellow; }
 
 .bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; }
@@ -67,13 +67,17 @@
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
+ const VERNUM = "0.010"; //G. JANDOT 09/05/2021
+
+ const MIN_NB_SEN = 200;
  const DELAY_SHORT = 900;
  const DELAY_LONG = 4000;
  const NB_MAX_PROP = 20;
  const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
  const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
  //SCORE_3 = NB_MAX_PROP
- const NO_GROUP = "-TOUS-";
+ const NO_GROUP = "-Tous les groupes-";
+ const NO_COMM = "-Toutes les commissions-";
  const NO_FILTER = "-filtre-"; //lowercase
  const NBSP = "&nbsp;";
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
@@ -81,18 +85,22 @@
 
  var interval_ctrl;
 
- var tableau_senateurs = []; //objets "senateur"
+ var tab_senateurs = []; //objets "senateur"
  // objet senateur:
+ // .nom
+ // .prenom
  // .nomcomplet
- // .nomtri
+ // (.nomtri)
  // .id
  // .sexe
  // .groupe
  // .dpt
+ // .comm
 
- var tableau_groupes = [];
- var tableau_bonrep = []; //indices:0..4
- var tableau_pastprop = [];
+ var tab_groupes = [];
+ var tab_commissions = [];
+ var tab_bonrep = []; //indices:0..4
+ var tab_pastprop = [];
 
  var bonrep = 0;
  var score = 0;
@@ -104,24 +112,42 @@
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
- function xval(xmlelt)  { return xmlelt.childNodes[0].nodeValue; } //obsolete (XML)
  function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
  function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"}
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
  
- function compare_senateurs(sen1,sen2)
+ /*function compare_senateurs(sen1,sen2)
  {
 	 return (sen1.nomtri>sen2.nomtri); //accents ?
- }
+ }*/
 
 //////////////////////////
  
  function start()
  {
-	ajax("https://www.nossenateurs.fr/senateurs/enmandat/json", parsing);
-	//https://www.senat.fr/senateurs/sens_alpha.json
+	elt("vernum").innerHTML = VERNUM;
+	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+	//https://www.nossenateurs.fr/senateurs/enmandat/json
 	//https://www.nossenateurs.fr/senateurs/enmandat/xml
+ }
+ 
+ function sen2id(nom)
+ {
+    var r = nom.toLowerCase();
+    r = r.replace(new RegExp(/ /g),"_");
+	r = r.replace(new RegExp(/-/g),"_");
+	r = r.replace(new RegExp(/[àáâãäå]/g),"a");
+    r = r.replace(new RegExp(/æ/g),"ae");
+    r = r.replace(new RegExp(/ç/g),"c");
+    r = r.replace(new RegExp(/[èéêë]/g),"e");
+    r = r.replace(new RegExp(/[ìíîï]/g),"i");
+    r = r.replace(new RegExp(/ñ/g),"n");                
+    r = r.replace(new RegExp(/[òóôõö]/g),"o");
+    r = r.replace(new RegExp(/œ/g),"oe");
+    r = r.replace(new RegExp(/[ùúûü]/g),"u");
+    r = r.replace(new RegExp(/[ýÿ]/g),"y");
+    return r;
  }
  
  function parsing(texte)
@@ -129,7 +155,7 @@
 	var jsonobj = JSON.parse(texte);
 	var jsen = jsonobj['senateurs'];
 	
-	if (jsen.length < 200)
+	if (jsen.length < MIN_NB_SEN)
 	{
 		hide("loading");
 		elt("error").innerHTML = "Nombre de sénateurs téléchargés (" + jsen.length + ") insuffisant.";
@@ -140,74 +166,94 @@
 		for (i=0; i<jsen.length; i++)
 		{
 			var senateur = new Object();
-			senateur.nomcomplet = jsen[i]['senateur']['nom'];
-			//normalize ?
-			//doesn't work properly//
-			/*var mots = xval(tableau_xmlnoms[i]).split(" ");
-			//nom=dernier mot (sans éventuelle particule)
-			var last = mots.length-1;
-			mots[last] = mots[last].toLowerCase();
-			mots[last] = mots[last].charAt(0).toUpperCase() + mots[last].slice(1);
-			var nouvnom = "";
-			for (j=0; j<mots.length; j++)
+			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
+			senateur.prenom = jsen[i]['etat_civil']['prenomuse']
+			senateur.nomcomplet = senateur.prenom + " " + senateur.nom;
+
+			//senateur.nomtri = jsen[i]['nom_technique'];
+			senateur.sexe = jsen[i]['etat_civil']['qualite'];
+			if (senateur.sexe == "M.")
 			{
-				nouvnom = nouvnom + mots[j] + " ";
+				senateur.sexe = "H";
 			}
-			nouvnom = nouvnom.trim(); //retrait du dernier espace*/
-			//contournement temporaire d'urgence
-			if (senateur.nomcomplet=="Alain CAZABONNE")
+			else
 			{
-				senateur.nomcomplet="Alain Cazabonne";
+				senateur.sexe = "F";
 			}
-			if (senateur.nomcomplet=="Guylène PANTEL")
+			senateur.id = senateur.nom + "_" + senateur.prenom + jsen[i]['matricule'];
+			//le "nom_technique" est malheureusement inexploitable en raison d'un grand nombre d'anomalies
+			// (espaces et accents restants, matricule parfois présent et autres curiosités)
+			//=>il faut le recalculer
+			senateur.id = sen2id(senateur.id);
+			try 
 			{
-				senateur.nomcomplet="Guylène Pantel";
+				senateur.groupe = jsen[i]['groupe_politique']['nom_court'];
 			}
-			
-			senateur.nomtri = jsen[i]['senateur']['nom_de_famille'];
-			senateur.nomtri = (senateur.nomtri).toLowerCase(); //traitement des accents ?
-			senateur.sexe = jsen[i]['senateur']['sexe'];
-			senateur.id = jsen[i]['senateur']['id_institution'];
-			senateur.groupe = jsen[i]['senateur']['groupe_sigle'];
-			senateur.dpt = jsen[i]['senateur']['nom_circo'];
-			tableau_senateurs.push(senateur);
-			if (tableau_groupes.indexOf(senateur.groupe)==-1)
+			catch
 			{
-				tableau_groupes.push(senateur.groupe);
+				senateur.groupe = "";
+			}
+			senateur.dpt = jsen[i]['circonscription']['nom'];
+			try
+			{
+				senateur.comm = jsen[i]['commission_permanente']['nom_court'];
+			}
+			catch
+			//le/la président.e du Sénat n'appartient à aucune commission permanente
+			{
+				senateur.comm = "";
+			}
+			tab_senateurs.push(senateur);
+			if (tab_groupes.indexOf(senateur.groupe)==-1)
+			{
+				tab_groupes.push(senateur.groupe);
+			}
+			if (senateur.comm!="") //président(e) du Sénat sans commission
+			{
+				if (tab_commissions.indexOf(senateur.comm)==-1)
+				{
+					tab_commissions.push(senateur.comm);
+				}
 			}
 		}
 		
-		tableau_senateurs.sort(compare_senateurs);
-		
-		
+		//downloaded data are already sorted
+		//tab_senateurs.sort(compare_senateurs);		
+
 		async_cpt = 0;
-		elt("loadinfo").innerHTML = "Préparation des données et téléchargement des photos..."
+		elt("loadinfo").innerHTML = "Préparation des données..."
 		interval_ctrl = setInterval(fill_trombi, 0);
 	 }
  }
  
  function fill_trombi()
  {
-	//fill trombi
 	var i = async_cpt;
-	elt("listsen").innerHTML += "<A HREF=\"" + id2url(tableau_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tableau_senateurs[i].id + "\">"
-			+ "<img class=\"imgtrombi\" src=\""	+ id2img(tableau_senateurs[i].id) + "\">"
-			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + tableau_senateurs[i].nomcomplet + "</div>"
-			+ "<div class=\"sengrp\">" + tableau_senateurs[i].groupe + "</div>"
-			+ "<div class=\"sendpt\">" + tableau_senateurs[i].dpt + "</div></div></A>";
+	elt("listsen").innerHTML += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
+			+ "<img class=\"imgtrombi\" src=\""	+ id2img(tab_senateurs[i].id) + "\">"
+			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + tab_senateurs[i].nomcomplet + "</div>"
+			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
+			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
+			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></A>";
 	
 	async_cpt++;
-	if (async_cpt>=tableau_senateurs.length)
+	if (async_cpt>=tab_senateurs.length)
 	{
-		hide("loading");
 		clearInterval(interval_ctrl);
-		tableau_groupes.sort();
+		hide("loading");
+		tab_groupes.sort();
 		var grp = elt("selgrp");
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
-		for (i=0; i< tableau_groupes.length; i++)
+		for (i=0; i< tab_groupes.length; i++)
 		{
-			grp.innerHTML += "<option value=\"" + tableau_groupes[i] + "\">" + tableau_groupes[i] + "</option>"
-		} 
+			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>"
+		}
+		var com = elt("selcom");
+		com.innerHTML = "<option value=\"\">" + NO_COMM + "</option>";
+		for (i=0; i< tab_commissions.length; i++)
+		{
+			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>"
+		}
 		show("messen");
 	}
  }
@@ -246,9 +292,6 @@
 			break;
 		case 3:
 			hide("messen");
-			trombi_h = true;
-			trombi_f = true;
-			elt("filtre").value = NO_FILTER;
 			show("trombi");
 			break;
 	}
@@ -298,7 +341,7 @@
 	{
 		score = 0;
 		scoremax = 0;
-		tableau_pastprop.length = 0;
+		tab_pastprop.length = 0;
 	}
 	elt("score").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP + " - ";
 	elt("score").innerHTML += "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
@@ -312,48 +355,48 @@
 		return;
 	}
 		
-	var n = tableau_senateurs.length;
+	var n = tab_senateurs.length;
 	var num1 = Math.floor(n*Math.random());
-	var sexeref = tableau_senateurs[num1].sexe;
+	var sexeref = tab_senateurs[num1].sexe;
 	var num2 = Math.floor(n*Math.random());
-	var sexe = tableau_senateurs[num2].sexe;
+	var sexe = tab_senateurs[num2].sexe;
 	while ((num2==num1) || (sexe!=sexeref))
 	{
 		num2 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num2].sexe;
+		sexe = tab_senateurs[num2].sexe;
 	}
 	var num3 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num3].sexe;
+	sexe = tab_senateurs[num3].sexe;
 	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
 	{
 		num3 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num3].sexe;
+		sexe = tab_senateurs[num3].sexe;
 	}
 	var num4 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num4].sexe;
+	sexe = tab_senateurs[num4].sexe;
 	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
 	{
 		num4 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num4].sexe;
+		sexe = tab_senateurs[num4].sexe;
 	}
 	var num5 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num5].sexe;
+	sexe = tab_senateurs[num5].sexe;
 	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
 	{
 		num5 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num5].sexe;
+		sexe = tab_senateurs[num5].sexe;
 	}
 	//5 fausses réponses **différentes**
-	elt("nom1").innerHTML= tableau_senateurs[num1].nomcomplet;
-	elt("nom2").innerHTML= tableau_senateurs[num2].nomcomplet;
-	elt("nom3").innerHTML= tableau_senateurs[num3].nomcomplet;
-	elt("nom4").innerHTML= tableau_senateurs[num4].nomcomplet;
-	elt("nom5").innerHTML= tableau_senateurs[num5].nomcomplet;
-	tableau_bonrep[0] = num1;
-	tableau_bonrep[1] = num2;
-	tableau_bonrep[2] = num3;
-	tableau_bonrep[3] = num4;
-	tableau_bonrep[4] = num5;
+	elt("nom1").innerHTML= tab_senateurs[num1].nomcomplet;
+	elt("nom2").innerHTML= tab_senateurs[num2].nomcomplet;
+	elt("nom3").innerHTML= tab_senateurs[num3].nomcomplet;
+	elt("nom4").innerHTML= tab_senateurs[num4].nomcomplet;
+	elt("nom5").innerHTML= tab_senateurs[num5].nomcomplet;
+	tab_bonrep[0] = num1;
+	tab_bonrep[1] = num2;
+	tab_bonrep[2] = num3;
+	tab_bonrep[3] = num4;
+	tab_bonrep[4] = num5;
 	
 	//écrasement avec la bonne réponse à un endroit (bonrep [1..5])) au hasard
 	var vnum = 0;
@@ -361,27 +404,27 @@
 	do
 	{
 		vnum = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[vnum].sexe;
+		sexe = tab_senateurs[vnum].sexe;
 		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
 		{
 			vnum = Math.floor(n*Math.random());
-			sexe = tableau_senateurs[vnum].sexe;
+			sexe = tab_senateurs[vnum].sexe;
 		}
 		prop_ok = true;
-		for (i=0; i<tableau_pastprop.length; i++)
+		for (i=0; i<tab_pastprop.length; i++)
 		{
-			if (vnum==tableau_pastprop[i])
+			if (vnum==tab_pastprop[i])
 			{
 				prop_ok = false;
 			}
 		}
 	} while (!prop_ok);
-	tableau_pastprop.push(vnum);
+	tab_pastprop.push(vnum);
 
 	bonrep = Math.floor(5*Math.random())+1;
-	elt("img0").src = id2img(tableau_senateurs[vnum].id);
+	elt("img0").src = id2img(tab_senateurs[vnum].id);
 	var varnom = "nom" + bonrep;
-	elt(varnom).innerHTML = tableau_senateurs[vnum].nomcomplet;
+	elt(varnom).innerHTML = tab_senateurs[vnum].nomcomplet;
 	elt("nomok").innerHTML = elt(varnom).innerHTML;	
 	show("nom1");
 	show("nom2");
@@ -403,7 +446,7 @@
 		delay = DELAY_LONG;
 		elt("nomno").innerHTML = UTF8_CROSS_MARK + NBSP + elt("nom"+rep).innerHTML;
 		show("nomno");
-		elt("imgindic").src = id2img(tableau_senateurs[tableau_bonrep[rep-1]].id);
+		elt("imgindic").src = id2img(tab_senateurs[tab_bonrep[rep-1]].id);
 		show("imgindic");
 	}
 	else
@@ -432,7 +475,7 @@
 	{
 		score = 0;
 		scoremax = 0;
-		tableau_pastprop.length = 0;
+		tab_pastprop.length = 0;
 	}
 	elt("score").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_PROP + " - ";
 	elt("score").innerHTML += "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
@@ -446,48 +489,48 @@
 		return;
 	}
 	
-	var n = tableau_senateurs.length;
+	var n = tab_senateurs.length;
 	var num1 = Math.floor(n*Math.random());
-	var sexeref = tableau_senateurs[num1].sexe;
+	var sexeref = tab_senateurs[num1].sexe;
 	var num2 = Math.floor(n*Math.random());
-	var sexe = tableau_senateurs[num2].sexe;
+	var sexe = tab_senateurs[num2].sexe;
 	while ((num2==num1) || (sexe!=sexeref))
 	{
 		num2 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num2].sexe;
+		sexe = tab_senateurs[num2].sexe;
 	}
 	var num3 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num3].sexe;
+	sexe = tab_senateurs[num3].sexe;
 	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
 	{
 		num3 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num3].sexe;
+		sexe = tab_senateurs[num3].sexe;
 	}
 	var num4 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num4].sexe;
+	sexe = tab_senateurs[num4].sexe;
 	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
 	{
 		num4 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num4].sexe;
+		sexe = tab_senateurs[num4].sexe;
 	}
 	var num5 = Math.floor(n*Math.random());
-	sexe = tableau_senateurs[num5].sexe;
+	sexe = tab_senateurs[num5].sexe;
 	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
 	{
 		num5 = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[num5].sexe;
+		sexe = tab_senateurs[num5].sexe;
 	}
 	//5 fausses réponses **différentes**
-	elt("img1").src = id2img(tableau_senateurs[num1].id);
-	elt("img2").src = id2img(tableau_senateurs[num2].id);
-	elt("img3").src = id2img(tableau_senateurs[num3].id);
-	elt("img4").src = id2img(tableau_senateurs[num4].id);
-	elt("img5").src = id2img(tableau_senateurs[num5].id);
-	tableau_bonrep[0] = num1;
-	tableau_bonrep[1] = num2;
-	tableau_bonrep[2] = num3;
-	tableau_bonrep[3] = num4;
-	tableau_bonrep[4] = num5;
+	elt("img1").src = id2img(tab_senateurs[num1].id);
+	elt("img2").src = id2img(tab_senateurs[num2].id);
+	elt("img3").src = id2img(tab_senateurs[num3].id);
+	elt("img4").src = id2img(tab_senateurs[num4].id);
+	elt("img5").src = id2img(tab_senateurs[num5].id);
+	tab_bonrep[0] = num1;
+	tab_bonrep[1] = num2;
+	tab_bonrep[2] = num3;
+	tab_bonrep[3] = num4;
+	tab_bonrep[4] = num5;
 	
 	//écrasement avec la bonne réponse à un endroit ("bonrep" [1..5]) au hasard
 	var vnum = 0;
@@ -495,27 +538,27 @@
 	do
 	{
 		vnum = Math.floor(n*Math.random());
-		sexe = tableau_senateurs[vnum].sexe;
+		sexe = tab_senateurs[vnum].sexe;
 		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
 		{
 			vnum = Math.floor(n*Math.random());
-			sexe = tableau_senateurs[vnum].sexe;
+			sexe = tab_senateurs[vnum].sexe;
 		}
 		prop_ok = true;
-		for (i=0; i<tableau_pastprop.length; i++)
+		for (i=0; i<tab_pastprop.length; i++)
 		{
-			if (vnum==tableau_pastprop[i])
+			if (vnum==tab_pastprop[i])
 			{
 				prop_ok = false;
 			}
 		}
 	} while (!prop_ok);
-	tableau_pastprop.push(vnum);
+	tab_pastprop.push(vnum);
 	
 	bonrep = Math.floor(5*Math.random())+1;
-	elt("nom0").innerHTML= tableau_senateurs[vnum].nomcomplet;
+	elt("nom0").innerHTML= tab_senateurs[vnum].nomcomplet;
 	var varimg = "img" + bonrep;
-	elt(varimg).src = id2img(tableau_senateurs[vnum].id);
+	elt(varimg).src = id2img(tab_senateurs[vnum].id);
 	elt("imgok").src = elt(varimg).src;
 	show("img1");
 	show("img2");
@@ -537,7 +580,7 @@
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
 		show("imgno");
-		elt("nomindic").innerHTML = tableau_senateurs[tableau_bonrep[rep-1]].nomcomplet;
+		elt("nomindic").innerHTML = tab_senateurs[tab_bonrep[rep-1]].nomcomplet;
 		show("nomindic");
 	}
 	setTimeout(function(){ game2(rep); }, delay);
@@ -555,6 +598,7 @@
  {
 	var filtre = elt("filtre").value.toLowerCase(); //perf
 	var filgrp = elt("selgrp").options[elt("selgrp").selectedIndex].text;
+	var filcom = elt("selcom").options[elt("selcom").selectedIndex].text;
 	if (action==1)//hommes
 	{
 		trombi_h = !trombi_h;
@@ -581,51 +625,57 @@
 		elt("femmes").className = "chinactif";
 	}
 
-	for (i=0; i<tableau_senateurs.length; i++)
+	for (i=0; i<tab_senateurs.length; i++)
 	{
-		if (tableau_senateurs[i].sexe == "H")
+		if (tab_senateurs[i].sexe == "H")
 		{
 			if (trombi_h)
 			{
-				show(tableau_senateurs[i].id);
+				show(tab_senateurs[i].id);
 			}
 			else
 			{
-				hide(tableau_senateurs[i].id);
+				hide(tab_senateurs[i].id);
 			}				
 		}
 		else //F
 		{
 			if (trombi_f)
 			{
-				show(tableau_senateurs[i].id);
+				show(tab_senateurs[i].id);
 			}
 			else
 			{
-				hide(tableau_senateurs[i].id);
+				hide(tab_senateurs[i].id);
 			}
 		}
 		
-		if (filtre!= NO_FILTER && filtre!=""
-)
+		if (filtre!= NO_FILTER && filtre!="")
 		{
-			if ((!(tableau_senateurs[i].nomcomplet.toLowerCase()).includes(filtre)))
+			if ((!(tab_senateurs[i].nomcomplet.toLowerCase()).includes(filtre)))
 			{
-				hide(tableau_senateurs[i].id);
+				hide(tab_senateurs[i].id);
 			}
 		}
 		if (filgrp != NO_GROUP)
 		{
-			if (tableau_senateurs[i].groupe != filgrp)
+			if (tab_senateurs[i].groupe != filgrp)
 			{
-				hide(tableau_senateurs[i].id);
+				hide(tab_senateurs[i].id);
+			}
+		}
+		if (filcom != NO_COMM)
+		{
+			if (tab_senateurs[i].comm != filcom)
+			{
+				hide(tab_senateurs[i].id);
 			}
 		}
 	}
 	show("vide");
-	for (i=0; i<tableau_senateurs.length; i++)
+	for (i=0; i<tab_senateurs.length; i++)
 	{
-		if (elt(tableau_senateurs[i].id).style.display == "")
+		if (elt(tab_senateurs[i].id).style.display == "")
 		{
 			hide("vide");
 			break;
@@ -678,13 +728,14 @@
 </div> <!--/messen-->
 
 <div id="error" style="display:none"></div>
-<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version 0.009</A></div>
-<!-- G. JANDOT / 08/05/2021 -->
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/">Version <span id="vernum">0.000</span></A></div>
+
 <div id="trombi" style="display:none">
 <div>
 <span id="hommes" onclick="majtrombi(1)" class="chactif" unselectable="on">Hommes</span>&nbsp;
 <span id="femmes" onclick="majtrombi(2)" class="chactif" unselectable="on">Femmes</span>&nbsp;
 <select id="selgrp" onchange="majtrombi(0)"></select>
+<select id="selcom" onchange="majtrombi(0)"></select>
 <input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()">
 <button id="return" onclick="quit()" class="bouton">Retour</button>
 </div>
