@@ -32,7 +32,7 @@
 #nomno { font-size:1.1em; color:#FF8888; }
 #imgindic { height:90px; width:62px; border:3px solid red; border-radius:9px; }
 
-#nom0 { font-size:1.4em; color:white; margin-top:25px; padding-bottom:25px; cursor:pointer; }
+#nom0 { font-size:1.4em; color:white; margin-top:25px; padding-bottom:25px; }
 .imgsen { height:225px; width:155px; border:1px solid black; border-radius:9px; margin:3px; cursor:pointer; }
 .imgsen:hover { transform:scale(1.1); border:3px solid yellow; margin:1px; } 
 #imgok { height:247px; width:170px; border:5px solid green; border-radius:15px; }
@@ -65,7 +65,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "0.011"; //G. JANDOT 09/05/2021
+ const VERNUM = "0.012"; //G. JANDOT 10/05/2021
 
  const MIN_NB_SEN = 200;
  const DELAY_SHORT = 900;
@@ -606,10 +606,18 @@
 	if (action==1)//hommes
 	{
 		trombi_h = !trombi_h;
+		if (!trombi_f && !trombi_h)
+		{
+			trombi_f = true;
+		}
 	}
 	if (action==2)//femmes
 	{
 		trombi_f = !trombi_f;
+		if (!trombi_f && !trombi_h)
+		{
+			trombi_h = true;
+		}
 	}
 	
 	if (trombi_h)
