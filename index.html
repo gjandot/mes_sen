@@ -40,6 +40,8 @@
 #nomindic { font-size:1.1em; color:#FF8888; }
 
 #trombi { color:white; }
+#tools { position:fixed; top:0; background-color:black; width:100%; padding:20px; }
+#listsen { padding-top:45px; }
 .chactif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
 .chinactif { color:red; text-decoration:line-through; cursor:pointer; } 
 .imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
@@ -52,6 +54,7 @@
 
 .bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; }
 .quit { position:fixed; top:500px; }
+.reset { float:right; margin-right:99px; background-color:#8888FF; color: yellow; }
 
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; background-color:#FFCCCC; }
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
@@ -65,7 +68,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "0.012"; //G. JANDOT 10/05/2021
+ const VERNUM = "0.013"; //G. JANDOT 10/05/2021
 
  const MIN_NB_SEN = 200;
  const DELAY_SHORT = 900;
@@ -88,7 +91,6 @@
  // .nom
  // .prenom
  // .nomcomplet
- // (.nomtri)
  // .id
  // .sexe
  // .groupe
@@ -115,11 +117,6 @@
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
  
- /*function compare_senateurs(sen1,sen2)
- {
-	 return (sen1.nomtri>sen2.nomtri); //accents ?
- }*/
-
 //////////////////////////
  
  function start()
@@ -168,7 +165,6 @@
 			senateur.prenom = jsen[i]['etat_civil']['prenomuse']
 			senateur.nomcomplet = senateur.prenom + " " + senateur.nom;
 
-			//senateur.nomtri = jsen[i]['nom_technique'];
 			senateur.sexe = jsen[i]['etat_civil']['qualite'];
 			if (senateur.sexe == "M.")
 			{
@@ -202,11 +198,13 @@
 				senateur.comm = "";
 			}
 			tab_senateurs.push(senateur);
+			//LISTE DES GROUPES - groups list
 			if (tab_groupes.indexOf(senateur.groupe)==-1)
 			{
 				tab_groupes.push(senateur.groupe);
 			}
-			if (senateur.comm!="") //président(e) du Sénat sans commission
+			//LISTE DES COMMISSIONS - committees list
+			if (senateur.comm!="") //président(e) du Sénat sans commission - no committee for the president
 			{
 				if (tab_commissions.indexOf(senateur.comm)==-1)
 				{
@@ -215,9 +213,6 @@
 			}
 		}
 		
-		//downloaded data are already sorted
-		//tab_senateurs.sort(compare_senateurs);		
-
 		async_cpt = 0;
 		elt("loadinfo").innerHTML = "Préparation des données..."
 		interval_ctrl = setInterval(fill_trombi, 0);
@@ -232,7 +227,7 @@
 			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + tab_senateurs[i].nomcomplet + "</div>"
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
 			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
-			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></A>";
+			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></div></A>";
 	
 	async_cpt++;
 	if (async_cpt>=tab_senateurs.length)
@@ -252,6 +247,7 @@
 		{
 			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>"
 		}
+		reset(); //init trombi
 		show("messen");
 	}
  }
@@ -296,7 +292,7 @@
 	}
  }
  
- function quit()
+ function quit() //exit trombi
  {
 	document.title = APPNAME;
 	hide("game1");
@@ -306,6 +302,18 @@
 	hide("quit");
 	show("messen");
 	show("menu");
+ }
+ 
+ function reset() // reset trombi
+ {
+	hide("reset");
+	trombi_h = true;
+	trombi_f = true;
+	elt("selgrp").selectedIndex = 0;
+	elt("selcom").selectedIndex = 0;
+	elt("filtre").value = NO_FILTER;
+	elt("filtre").style.color = "#BBBBBB";
+	majtrombi(0);
  }
  
  function starscore(score)
@@ -595,12 +603,13 @@
 	if (elt("filtre").value == NO_FILTER)
 	{
 		elt("filtre").value = "";
+		elt("filtre").style.color = "black";
 	}
  }
 
  function majtrombi(action)
  {
-	var filtre = elt("filtre").value.toLowerCase(); //perf
+	var filtre = elt("filtre").value.toLowerCase().trim();
 	var filgrp = elt("selgrp").options[elt("selgrp").selectedIndex].text;
 	var filcom = elt("selcom").options[elt("selcom").selectedIndex].text;
 	if (action==1)//hommes
@@ -610,6 +619,7 @@
 		{
 			trombi_f = true;
 		}
+		show("reset");
 	}
 	if (action==2)//femmes
 	{
@@ -618,6 +628,7 @@
 		{
 			trombi_h = true;
 		}
+		show("reset");
 	}
 	
 	if (trombi_h)
@@ -635,6 +646,13 @@
 	else
 	{
 		elt("femmes").className = "chinactif";
+	}
+	if ( (filtre!= NO_FILTER && filtre!="")
+			|| (filgrp != NO_GROUP)
+			|| (filcom != NO_COMM)
+		)
+	{
+		show("reset");
 	}
 
 	for (i=0; i<tab_senateurs.length; i++)
@@ -743,14 +761,15 @@
 <div id="version" title="testée sous Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/">Version <span id="vernum">0.000</span></A></div>
 
 <div id="trombi" style="display:none">
-<div>
+<div id="tools">
 <span id="hommes" onclick="majtrombi(1)" class="chactif" unselectable="on">Hommes</span>&nbsp;
 <span id="femmes" onclick="majtrombi(2)" class="chactif" unselectable="on">Femmes</span>&nbsp;
 <select id="selgrp" onchange="majtrombi(0)"></select>
 <select id="selcom" onchange="majtrombi(0)"></select>
 <input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()">
-<button id="return" onclick="quit()" class="bouton">Retour</button>
-</div>
+<button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
+<button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les critères de recherche">Réinitialiser</button>
+</div> <!--tools-->
 <div id="listsen"></div>
 <div id="vide" class="senelt" style="display:none">Aucun résultat.</div>
 </div> <!--/trombi-->
