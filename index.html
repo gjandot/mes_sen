@@ -1,32 +1,35 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<link rel="icon" type="image/png" href="trombico.png">
 <meta charset="UTF-8">
 <!--IDs
 * numéro de photo (jeux) sous forme d'une barre de progression
-* largeur zone noms
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs difficultés (nombres de propositions)
-* photos non sénateurs (secret guest stars)
+* photos non sénateurs (secret guest stars) ou anciens sénateurs
 * noms inventés
 * prénoms changés
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
-* problématique des images absentes (début de mandat)
-*/
+* fill_trombi : 10 par 10, 20 par 20, + ?
+* meilleur tooltip sur le menu (accueil)
+* écran de veille sur le menu (accueil) ?
+* trombi seul
 -->
 <title>Mes-Sen</title>
 <style>
-#messen { height:500px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; }
-#loading { font-size:1.2em; color: white; }
+#messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
+#loading { font-size:1.2em; color:white; }
 .gamesel { position:relative; height:120px; width:250px; color:white; font-size:1.5em; cursor:pointer; background-color:blue;
 			border:3px solid black; margin:10px; border-radius:25px; text-align:center; line-height:120px; }
 .gamesel:hover { border:3px solid yellow; background-color:white; color:blue; font-size:2em; }
 #score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; }
 
-#img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; }
-.nomsen { font-size:1.2em; color:white; cursor:pointer; }
+#img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
+#noms { float:left; margin-top:25px; }
+.nomsen { font-size:1.2em; height:25px; color:white; cursor:pointer; }
 .nomsen:hover { font-size:1.4em; color:yellow; }
 #nomok { font-size:1.5em; color:#44FF44; }
 #nomno { font-size:1.1em; color:#FF8888; }
@@ -35,7 +38,7 @@
 #nom0 { font-size:1.4em; color:white; margin-top:25px; padding-bottom:25px; }
 .imgsen { height:225px; width:155px; border:1px solid black; border-radius:9px; margin:3px; cursor:pointer; }
 .imgsen:hover { transform:scale(1.1); border:3px solid yellow; margin:1px; } 
-#imgok { height:247px; width:170px; border:5px solid green; border-radius:15px; }
+#imgok { height:247px; width:170px; border:5px solid #44FF44; border-radius:15px; }
 #imgno { height:90px; width:62px; border:3px solid red; margin-left:9px; border-radius:9px; }
 #nomindic { font-size:1.1em; color:#FF8888; }
 
@@ -45,20 +48,20 @@
 .chactif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
 .chinactif { color:red; text-decoration:line-through; cursor:pointer; } 
 .imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
-.infotrombi { float:right; padding-left: 5px;}
-.senelt { color:white; text-decoration:none; border:1px solid grey; width:22%; padding: 3px; margin:9px; box-shadow: 3px 3px 5px white; display:inline flex; }
-.senelt:hover { background-color: #C80947; }
+.infotrombi { float:right; padding-left:5px;}
+.senelt { color:white; text-decoration:none; border:1px solid grey; width:22%; padding:3px; margin:9px; box-shadow:3px 3px 5px white; display:inline flex; }
+.senelt:hover { background-color:#C80947; }
 .senelt a { color:white; text-decoration:none; }
-.sennom { font-weight: bold; margin-bottom: 20px; }
-.sendpt { color: yellow; }
+.sennom { font-weight:bold; margin-bottom:20px; }
+.sendpt { color:yellow; }
 
-.bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; }
-.quit { position:fixed; top:500px; }
-.reset { float:right; margin-right:99px; background-color:#8888FF; color: yellow; }
+.bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; display:inline-block; }
+.bouton:hover { color:white; }
+.quit { position:absolute; bottom:15px; left:15px; }
+.reset { float:right; margin-right:99px; background-color:#8888FF; color:yellow; }
 
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; background-color:#FFCCCC; }
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
-}
 </style>
 </head>
 <body onload="start()" style="background-color:black; user-select:none">
@@ -68,7 +71,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "0.013"; //G. JANDOT 10/05/2021
+ const VERNUM = "0.014"; //G. JANDOT 11/05/2021
 
  const MIN_NB_SEN = 200;
  const DELAY_SHORT = 900;
@@ -84,38 +87,37 @@
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
 
- var interval_ctrl;
-
  var tab_senateurs = []; //objets "senateur"
- // objet senateur:
- // .nom
- // .prenom
- // .nomcomplet
- // .id
- // .sexe
- // .groupe
- // .dpt
- // .comm
+	// .nom
+	// .prenom
+	// .id
+	// .sexe
+	// .groupe
+	// .dpt
+	// .comm
+	// .imgok
 
  var tab_groupes = [];
  var tab_commissions = [];
- var tab_bonrep = []; //indices:0..4
+ var tab_bonrep = []; //indices:0..4; valeurs : 1..5
  var tab_pastprop = [];
 
  var bonrep = 0;
  var score = 0;
  var scoremax = 0;
  var async_cpt = 0;
+ var nb_imgerr = 0;
  var trombi_h = true;
  var trombi_f = true;
 
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
- function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
- function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"}
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
+ function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
+ function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"; }
+ function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
  
 //////////////////////////
  
@@ -144,7 +146,7 @@
     r = r.replace(new RegExp(/[ýÿ]/g),"y");
     return r;
  }
- 
+
  function parsing(texte)
  {
 	var jsonobj = JSON.parse(texte);
@@ -163,8 +165,6 @@
 			var senateur = new Object();
 			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
 			senateur.prenom = jsen[i]['etat_civil']['prenomuse']
-			senateur.nomcomplet = senateur.prenom + " " + senateur.nom;
-
 			senateur.sexe = jsen[i]['etat_civil']['qualite'];
 			if (senateur.sexe == "M.")
 			{
@@ -174,16 +174,17 @@
 			{
 				senateur.sexe = "F";
 			}
-			senateur.id = senateur.nom + "_" + senateur.prenom + jsen[i]['matricule'];
 			//le "nom_technique" est malheureusement inexploitable en raison d'un grand nombre d'anomalies
 			// (espaces et accents restants, matricule parfois présent et autres curiosités)
 			//=>il faut le recalculer
+			senateur.id = senateur.nom + "_" + senateur.prenom + jsen[i]['matricule'];
 			senateur.id = sen2id(senateur.id);
 			try 
 			{
 				senateur.groupe = jsen[i]['groupe_politique']['nom_court'];
 			}
 			catch
+			//en début de mandat, le groupe n'est pas précisé immédiatement
 			{
 				senateur.groupe = "";
 			}
@@ -197,6 +198,7 @@
 			{
 				senateur.comm = "";
 			}
+			senateur.imgok = true;
 			tab_senateurs.push(senateur);
 			//LISTE DES GROUPES - groups list
 			if (tab_groupes.indexOf(senateur.groupe)==-1)
@@ -214,25 +216,35 @@
 		}
 		
 		async_cpt = 0;
-		elt("loadinfo").innerHTML = "Préparation des données..."
-		interval_ctrl = setInterval(fill_trombi, 0);
+		elt("loadinfo").innerHTML = "Préparation des données...";
+		setTimeout(fill_trombi, 0);
 	 }
+ }
+ 
+ function imgerr(numsen)
+ {
+	nb_imgerr++;
+	tab_senateurs[numsen].imgok = false;
  }
  
  function fill_trombi()
  {
 	var i = async_cpt;
 	elt("listsen").innerHTML += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
-			+ "<img class=\"imgtrombi\" src=\""	+ id2img(tab_senateurs[i].id) + "\">"
-			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + tab_senateurs[i].nomcomplet + "</div>"
+			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +" )\">"
+			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + nomcomplet(i) + "</div>"
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
 			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
 			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></div></A>";
 	
 	async_cpt++;
-	if (async_cpt>=tab_senateurs.length)
+	elt("loadinfo").innerHTML = "Préparation des données (" + async_cpt + "/ " + tab_senateurs.length + ")...";
+	if (async_cpt<tab_senateurs.length)
 	{
-		clearInterval(interval_ctrl);
+		setTimeout(fill_trombi, 0);
+	}
+	else
+	{
 		hide("loading");
 		tab_groupes.sort();
 		var grp = elt("selgrp");
@@ -249,6 +261,14 @@
 		}
 		reset(); //init trombi
 		show("messen");
+		if (nb_imgerr > (tab_senateurs.length/10))
+		{
+			hide("loading");
+			elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
+			show("error");
+			hide("c1");
+			hide("c2");
+		}
 	}
  }
 
@@ -367,41 +387,45 @@
 		
 	var n = tab_senateurs.length;
 	var num1 = Math.floor(n*Math.random());
+	while (!tab_senateurs[num1].imgok)
+	{
+		num1 = Math.floor(n*Math.random());
+	}
 	var sexeref = tab_senateurs[num1].sexe;
 	var num2 = Math.floor(n*Math.random());
 	var sexe = tab_senateurs[num2].sexe;
-	while ((num2==num1) || (sexe!=sexeref))
+	while ((num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok))
 	{
 		num2 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num2].sexe;
 	}
 	var num3 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num3].sexe;
-	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
+	while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok))
 	{
 		num3 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num3].sexe;
 	}
 	var num4 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num4].sexe;
-	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
+	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok))
 	{
 		num4 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num4].sexe;
 	}
 	var num5 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num5].sexe;
-	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
+	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok))
 	{
 		num5 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num5].sexe;
 	}
 	//5 fausses réponses **différentes**
-	elt("nom1").innerHTML = tab_senateurs[num1].nomcomplet;
-	elt("nom2").innerHTML = tab_senateurs[num2].nomcomplet;
-	elt("nom3").innerHTML = tab_senateurs[num3].nomcomplet;
-	elt("nom4").innerHTML = tab_senateurs[num4].nomcomplet;
-	elt("nom5").innerHTML = tab_senateurs[num5].nomcomplet;
+	elt("nom1").innerHTML = nomcomplet(num1);
+	elt("nom2").innerHTML = nomcomplet(num2);
+	elt("nom3").innerHTML = nomcomplet(num3);
+	elt("nom4").innerHTML = nomcomplet(num4);
+	elt("nom5").innerHTML = nomcomplet(num5);
 	tab_bonrep[0] = num1;
 	tab_bonrep[1] = num2;
 	tab_bonrep[2] = num3;
@@ -415,7 +439,7 @@
 	{
 		vnum = Math.floor(n*Math.random());
 		sexe = tab_senateurs[vnum].sexe;
-		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
+		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok) )
 		{
 			vnum = Math.floor(n*Math.random());
 			sexe = tab_senateurs[vnum].sexe;
@@ -434,7 +458,7 @@
 	bonrep = Math.floor(5*Math.random())+1;
 	elt("img0").src = id2img(tab_senateurs[vnum].id);
 	var varnom = "nom" + bonrep;
-	elt(varnom).innerHTML = tab_senateurs[vnum].nomcomplet;
+	elt(varnom).innerHTML = nomcomplet(vnum);
 	elt("nomok").innerHTML = elt(varnom).innerHTML;	
 	show("nom1");
 	show("nom2");
@@ -503,31 +527,36 @@
 	
 	var n = tab_senateurs.length;
 	var num1 = Math.floor(n*Math.random());
+	while (!tab_senateurs[num1].imgok)
+	{
+		num1 = Math.floor(n*Math.random());
+	}
 	var sexeref = tab_senateurs[num1].sexe;
+
 	var num2 = Math.floor(n*Math.random());
 	var sexe = tab_senateurs[num2].sexe;
-	while ((num2==num1) || (sexe!=sexeref))
+	while ((num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok))
 	{
 		num2 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num2].sexe;
 	}
 	var num3 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num3].sexe;
-	while ((num3==num2) || (num3==num1) || (sexe!=sexeref))
+	while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok))
 	{
 		num3 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num3].sexe;
 	}
 	var num4 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num4].sexe;
-	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref))
+	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok))
 	{
 		num4 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num4].sexe;
 	}
 	var num5 = Math.floor(n*Math.random());
 	sexe = tab_senateurs[num5].sexe;
-	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref))
+	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok))
 	{
 		num5 = Math.floor(n*Math.random());
 		sexe = tab_senateurs[num5].sexe;
@@ -551,7 +580,7 @@
 	{
 		vnum = Math.floor(n*Math.random());
 		sexe = tab_senateurs[vnum].sexe;
-		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref))
+		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok))
 		{
 			vnum = Math.floor(n*Math.random());
 			sexe = tab_senateurs[vnum].sexe;
@@ -568,7 +597,7 @@
 	tab_pastprop.push(vnum);
 	
 	bonrep = Math.floor(5*Math.random())+1;
-	elt("nom0").innerHTML= tab_senateurs[vnum].nomcomplet;
+	elt("nom0").innerHTML= nomcomplet(vnum);
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(tab_senateurs[vnum].id);
 	elt("imgok").src = elt(varimg).src;
@@ -592,7 +621,7 @@
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
 		show("imgno");
-		elt("nomindic").innerHTML = tab_senateurs[tab_bonrep[rep-1]].nomcomplet;
+		elt("nomindic").innerHTML = nomcomplet(tab_bonrep[rep-1]);
 		show("nomindic");
 	}
 	setTimeout(function(){ game2(rep); }, delay);
@@ -619,7 +648,6 @@
 		{
 			trombi_f = true;
 		}
-		show("reset");
 	}
 	if (action==2)//femmes
 	{
@@ -628,8 +656,16 @@
 		{
 			trombi_h = true;
 		}
+	}
+	if (trombi_h && trombi_f)
+	{
+		hide("reset");
+	}
+	else
+	{
 		show("reset");
 	}
+	
 	
 	if (trombi_h)
 	{
@@ -682,7 +718,7 @@
 		
 		if (filtre!= NO_FILTER && filtre!="")
 		{
-			if ((!(tab_senateurs[i].nomcomplet.toLowerCase()).includes(filtre)))
+			if ((!(nomcomplet(i).toLowerCase()).includes(filtre)))
 			{
 				hide(tab_senateurs[i].id);
 			}
@@ -719,6 +755,8 @@
 <span id="loadinfo">Téléchargement des données...</span>
 </div> <!--/loading-->
 
+<div id="error" style="display:none"></div>
+
 <div id="messen" style="display:none">
 
 <div id="score" style="display:none"></div>
@@ -733,7 +771,8 @@
 </div> <!--/menu-->
 
 <div id="game1" style="display:none">
-<img id="img0">
+<img id="img0" title="Il faut cliquer sur le nom qui correspond à cette photo.">
+<div id="noms">
 <div id="nom1" class="nomsen" onclick="verif1(1)"></div>
 <div id="nom2" class="nomsen" onclick="verif1(2)"></div>
 <div id="nom3" class="nomsen" onclick="verif1(3)"></div>
@@ -741,10 +780,11 @@
 <div id="nom5" class="nomsen" onclick="verif1(5)"></div>
 <div id="nomok"></div>
 <div id="nomno"></div><img id="imgindic">
+</div> <!--/noms-->
 </div> <!--/game1-->
 
 <div id="game2" style="display:none">
-<div id="nom0"></div>
+<div id="nom0" title="Il faut cliquer sur la photo qui correspond à ce nom."></div>
 <img id="img1" class="imgsen" onclick="verif2(1)">
 <img id="img2" class="imgsen" onclick="verif2(2)">
 <img id="img3" class="imgsen" onclick="verif2(3)">
@@ -757,22 +797,21 @@
 <button id="quit" style="display:none" onclick="quit()" class="bouton quit">Abandonner</button>
 </div> <!--/messen-->
 
-<div id="error" style="display:none"></div>
-<div id="version" title="testée sous Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/">Version <span id="vernum">0.000</span></A></div>
-
 <div id="trombi" style="display:none">
 <div id="tools">
-<span id="hommes" onclick="majtrombi(1)" class="chactif" unselectable="on">Hommes</span>&nbsp;
-<span id="femmes" onclick="majtrombi(2)" class="chactif" unselectable="on">Femmes</span>&nbsp;
-<select id="selgrp" onchange="majtrombi(0)"></select>
-<select id="selcom" onchange="majtrombi(0)"></select>
-<input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()">
+<span id="hommes" onclick="majtrombi(1)" class="chactif">Hommes</span>&nbsp;
+<span id="femmes" onclick="majtrombi(2)" class="chactif">Femmes</span>&nbsp;
+<select id="selgrp" onchange="majtrombi(0)" title="Sélection d'un groupe politique"></select>
+<select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
+<input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" title="Filtre sur les noms et prénoms">
 <button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
-<button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les critères de recherche">Réinitialiser</button>
+<button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les filtres de recherche">Réinitialiser</button>
 </div> <!--tools-->
 <div id="listsen"></div>
 <div id="vide" class="senelt" style="display:none">Aucun résultat.</div>
 </div> <!--/trombi-->
+
+<div id="version" title="testée sous Windows 10 avec Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/">Version <span id="vernum">0.000</span></A></div>
 
 </body>
 </html>
