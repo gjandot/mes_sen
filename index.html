@@ -13,15 +13,15 @@
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
-* fill_trombi : 10 par 10, 20 par 20, + ?
 * meilleur tooltip sur le menu (accueil)
-* écran de veille sur le menu (accueil) ?
-* trombi seul
+* écran de veille sur le menu (accueil-citations de sénateurs) ?
 -->
 <title>Mes-Sen</title>
 <style>
 #messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
 #loading { font-size:1.2em; color:white; }
+#progressbar { height:50px; width:40%; margin:auto; }
+#progress { width:100%; margin:auto; }
 .gamesel { position:relative; height:120px; width:250px; color:white; font-size:1.5em; cursor:pointer; background-color:blue;
 			border:3px solid black; margin:10px; border-radius:25px; text-align:center; line-height:120px; }
 .gamesel:hover { border:3px solid yellow; background-color:white; color:blue; font-size:2em; }
@@ -71,7 +71,8 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "0.014"; //G. JANDOT 11/05/2021
+ const VERNUM = "0.015"; //G. JANDOT 13/05/2021
+ var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
  const DELAY_SHORT = 900;
@@ -124,6 +125,10 @@
  function start()
  {
 	elt("vernum").innerHTML = VERNUM;
+	if (window.location.search.toLowerCase() == "?trombi")
+	{
+		trombi_mode = true;
+	}
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
 	//https://www.nossenateurs.fr/senateurs/enmandat/json
 	//https://www.nossenateurs.fr/senateurs/enmandat/xml
@@ -217,6 +222,8 @@
 		
 		async_cpt = 0;
 		elt("loadinfo").innerHTML = "Préparation des données...";
+		elt("progress").max = tab_senateurs.length;
+		show("progressbar");
 		setTimeout(fill_trombi, 0);
 	 }
  }
@@ -236,9 +243,10 @@
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
 			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
 			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></div></A>";
+
 	
 	async_cpt++;
-	elt("loadinfo").innerHTML = "Préparation des données (" + async_cpt + "/ " + tab_senateurs.length + ")...";
+	elt("progress").value = async_cpt;
 	if (async_cpt<tab_senateurs.length)
 	{
 		setTimeout(fill_trombi, 0);
@@ -260,14 +268,21 @@
 			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>"
 		}
 		reset(); //init trombi
-		show("messen");
-		if (nb_imgerr > (tab_senateurs.length/10))
+		if (trombi_mode)
 		{
-			hide("loading");
-			elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
-			show("error");
-			hide("c1");
-			hide("c2");
+			hide("return");
+			launch(3);
+		}
+		else
+		{
+			show("messen");
+			if (nb_imgerr > (tab_senateurs.length/10))
+			{
+				elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
+				show("error");
+				hide("c1");
+				hide("c2");
+			}
 		}
 	}
  }
@@ -666,7 +681,6 @@
 		show("reset");
 	}
 	
-	
 	if (trombi_h)
 	{
 		elt("hommes").className = "chactif";
@@ -753,6 +767,7 @@
 <div id="loading">
 <p align="center"><img src="senanim.gif" style="vertical-align:middle" width="50" height="52" ALT="Logo">
 <span id="loadinfo">Téléchargement des données...</span>
+<div id="progressbar" style="display:none"><progress id="progress" value="0" max="100"></progress></div>
 </div> <!--/loading-->
 
 <div id="error" style="display:none"></div>
@@ -766,8 +781,7 @@
 		title="Pour 1 photo, 5 noms. Il faut trouver le bon.">"Quel nom&nbsp;?"</div>
 <div id="c2" onclick="launch(2)" class="gamesel"
 	title="Pour 1 nom, 5 photos. Il faut trouver la bonne.">"Quelle photo&nbsp;?"</div>
-<div id="c3" onclick="launch(3)" class="gamesel"
-	title="Trombinoscope interactif">Trombi</div>
+<div id="c3" onclick="launch(3)" class="gamesel" title="Trombinoscope interactif">Trombi</div>
 </div> <!--/menu-->
 
 <div id="game1" style="display:none">
