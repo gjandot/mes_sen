@@ -12,7 +12,6 @@
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
-* meilleur tooltip sur le menu (accueil)
 * écran de veille sur le menu (accueil) ?
 -->
 <title>Mes-Sen</title>
@@ -21,10 +20,13 @@
 #loading { font-size:1.2em; color:white; }
 #progressbar { height:50px; width:40%; margin:auto; }
 #progress { width:100%; margin:auto; }
-.gamesel { position:relative; height:120px; width:250px; color:white; font-size:1.5em; cursor:pointer; background-color:blue;
+.gamesel { font-size:1.5em; position:relative; height:120px; width:250px; color:white; cursor:pointer; background-color:blue;
 			border:3px solid black; margin:10px; border-radius:25px; text-align:center; line-height:120px; }
-.gamesel:hover { border:3px solid yellow; background-color:white; color:blue; font-size:2em; }
-
+.gamesel:hover { font-size:2em; border:3px solid yellow; background-color:white; color:blue; }
+.tooltip { font-size:1em; color:white; background-color:black; height:45px; width:200px;
+			position:absolute; left:300px; padding:9px; text-align:center; vertical-align:middle; }
+.tooltip:before { content:""; position:absolute; left:-15px; top:15px; 
+			border-top:15px solid transparent; border-right:16px solid black; border-bottom:15px solid transparent;}
 #score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; float:right; }
 #questprog { border:1px solid white; color:white; background-color:#222266; padding:7px; border-radius:12px; position:relative; }
 #questbar { background-color:blue; width:50%; border-radius:9px; padding-top:5px; padding-bottom:5px; }
@@ -48,6 +50,7 @@
 #trombi { color:white; }
 #tools { position:fixed; top:0; background-color:black; width:100%; padding:20px; }
 #listsen { padding-top:45px; }
+#nbsen { font-size:1.3em; color:white; border:2px solid white; border-radius:50%; margin-left:50px; padding:5px; background-color:#888888; }
 .chactif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
 .chinactif { color:red; text-decoration:line-through; cursor:pointer; } 
 .imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
@@ -75,10 +78,11 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.016"; //G. JANDOT 15/05/2021
+ const VERNUM = "1.017"; //G. JANDOT 15/05/2021
  var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
+ const MAX_NB_SEN = 500;
  const DELAY_SHORT = 900;
  const DELAY_LONG = 4000;
  const NB_MAX_PROP = 20;
@@ -114,15 +118,18 @@
  var nb_imgerr = 0;
  var trombi_h = true;
  var trombi_f = true;
+ var current_tip = "";
 
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
+ function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
  function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
  function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
+
  
 //////////////////////////
  
@@ -140,31 +147,39 @@
  
  function sen2id(nom)
  {
-    var r = nom.toLowerCase();
-    r = r.replace(new RegExp(/ /g),"_");
+	var r = nom.toLowerCase();
+	r = r.replace(new RegExp(/ /g),"_");
 	r = r.replace(new RegExp(/-/g),"_");
 	r = r.replace(new RegExp(/[àáâãäå]/g),"a");
-    r = r.replace(new RegExp(/æ/g),"ae");
-    r = r.replace(new RegExp(/ç/g),"c");
-    r = r.replace(new RegExp(/[èéêë]/g),"e");
-    r = r.replace(new RegExp(/[ìíîï]/g),"i");
-    r = r.replace(new RegExp(/ñ/g),"n");                
-    r = r.replace(new RegExp(/[òóôõö]/g),"o");
-    r = r.replace(new RegExp(/œ/g),"oe");
-    r = r.replace(new RegExp(/[ùúûü]/g),"u");
-    r = r.replace(new RegExp(/[ýÿ]/g),"y");
-    return r;
+	r = r.replace(new RegExp(/æ/g),"ae");
+	r = r.replace(new RegExp(/ç/g),"c");
+	r = r.replace(new RegExp(/[èéêë]/g),"e");
+	r = r.replace(new RegExp(/[ìíîï]/g),"i");
+	r = r.replace(new RegExp(/ñ/g),"n");                
+	r = r.replace(new RegExp(/[òóôõö]/g),"o");
+	r = r.replace(new RegExp(/œ/g),"oe");
+	r = r.replace(new RegExp(/[ùúûü]/g),"u");
+	r = r.replace(new RegExp(/[ýÿ]/g),"y");
+	return r;
  }
-
+ 
  function parsing(texte)
  {
 	var jsonobj = JSON.parse(texte);
 	var jsen = jsonobj['senateurs'];
 	
-	if (jsen.length < MIN_NB_SEN)
+	if ((jsen.length < MIN_NB_SEN) || (jsen.length > MAX_NB_SEN))
 	{
 		hide("loading");
-		elt("error").innerHTML = "Nombre de sénateurs téléchargés (" + jsen.length + ") insuffisant.";
+		elt("error").innerHTML = "Nombre de sénateurs téléchargés (" + jsen.length + ") ";
+		if (jsen.length < MIN_NB_SEN)
+		{
+			elt("error").innerHTML = elt("error").innerHTML + "insuffisant.";
+		}
+		else
+		{
+			elt("error").innerHTML = elt("error").innerHTML + "anormalement élevé.";
+		}
 		show("error");
 	}
 	else
@@ -308,7 +323,7 @@
 	httpRequest.send();
 	return true;
  }
-
+ 
  function launch(numjeu)
  {
 	hide("menu");
@@ -763,14 +778,28 @@
 			}
 		}
 	}
-	show("vide");
+	//show("vide");
+	var cptsen = 0;
 	for (i=0; i<tab_senateurs.length; i++)
 	{
-		if (elt(tab_senateurs[i].id).style.display == "")
+		/*if (elt(tab_senateurs[i].id).style.display == "")
 		{
 			hide("vide");
 			break;
+		}*/
+		if (elt(tab_senateurs[i].id).style.display == "")
+		{
+			cptsen++;
 		}
+	}
+	elt("nbsen").innerHTML = cptsen;
+	if (cptsen==0)
+	{
+		show("vide");
+	}
+	else
+	{
+		hide("vide");
 	}
  }
 </script>
@@ -790,10 +819,17 @@
 
 <div id="menu">
 <div id="c1" onclick="launch(1)" class="gamesel"
-		title="Pour 1 photo, 5 noms. Il faut trouver le bon.">"Quel nom&nbsp;?"</div>
+		onmouseenter="current_tip='tip1'; show('tip1')" onmouseleave="hide('tip1')" onmousemove="flotte(event)"
+		>"Quel nom&nbsp;?"</div>
+<div id="tip1" style="display:none" class="tooltip">Pour 1 photo, 5 noms.<BR>Il faut trouver le bon.</div>
 <div id="c2" onclick="launch(2)" class="gamesel"
-	title="Pour 1 nom, 5 photos. Il faut trouver la bonne.">"Quelle photo&nbsp;?"</div>
-<div id="c3" onclick="launch(3)" class="gamesel" title="Trombinoscope interactif">Trombi</div>
+		onmouseenter="current_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
+		>"Quelle photo&nbsp;?"</div>
+<div id="tip2" style="display:none" class="tooltip">Pour 1 nom, 5 photos.<BR>Il faut trouver la bonne.</div>
+<div id="c3" onclick="launch(3)" class="gamesel"
+			onmouseenter="current_tip='tip3'; show('tip3')" onmouseleave="hide('tip3')" onmousemove="flotte(event)"
+		>Trombi</div>
+<div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif</div>
 </div> <!--/menu-->
 
 <div id="game1" style="display:none">
@@ -831,6 +867,7 @@
 <select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
 <input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" title="Filtre sur les noms et prénoms">
 <button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
+<span id="nbsen" title="Compteur de résultats"></span>
 <button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les filtres de recherche">Réinitialiser</button>
 </div> <!--tools-->
 <div id="listsen"></div>
