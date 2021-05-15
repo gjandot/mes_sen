@@ -4,17 +4,16 @@
 <link rel="icon" type="image/png" href="trombico.png">
 <meta charset="UTF-8">
 <!--IDs
-* numéro de photo (jeux) sous forme d'une barre de progression
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs difficultés (nombres de propositions)
-* photos non sénateurs (secret guest stars) ou anciens sénateurs
+* guest stars (anciens sénateurs)
 * noms inventés
 * prénoms changés
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
 * meilleur tooltip sur le menu (accueil)
-* écran de veille sur le menu (accueil-citations de sénateurs) ?
+* écran de veille sur le menu (accueil) ?
 -->
 <title>Mes-Sen</title>
 <style>
@@ -25,7 +24,11 @@
 .gamesel { position:relative; height:120px; width:250px; color:white; font-size:1.5em; cursor:pointer; background-color:blue;
 			border:3px solid black; margin:10px; border-radius:25px; text-align:center; line-height:120px; }
 .gamesel:hover { border:3px solid yellow; background-color:white; color:blue; font-size:2em; }
-#score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; }
+
+#score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; float:right; }
+#questprog { border:1px solid white; color:white; background-color:#222266; padding:7px; border-radius:12px; position:relative; }
+#questbar { background-color:blue; width:50%; border-radius:9px; padding-top:5px; padding-bottom:5px; }
+#questnum { text-align:center; width:100%; position:absolute; top:11px;}
 
 #img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
 #noms { float:left; margin-top:25px; }
@@ -63,15 +66,16 @@
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; background-color:#FFCCCC; }
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
 </style>
+<noscript>L'application nécessite l'activation de Javascript.</noscript>
 </head>
-<body onload="start()" style="background-color:black; user-select:none">
+<body onload="start()" style="user-select:none">
 <script type="text/javascript">
 //
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "0.015"; //G. JANDOT 13/05/2021
+ const VERNUM = "1.016"; //G. JANDOT 15/05/2021
  var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
@@ -124,14 +128,14 @@
  
  function start()
  {
+	document.body.style.backgroundColor = "black";
+	show("loading");
 	elt("vernum").innerHTML = VERNUM;
 	if (window.location.search.toLowerCase() == "?trombi")
 	{
 		trombi_mode = true;
 	}
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
-	//https://www.nossenateurs.fr/senateurs/enmandat/json
-	//https://www.nossenateurs.fr/senateurs/enmandat/xml
  }
  
  function sen2id(nom)
@@ -309,6 +313,7 @@
  {
 	hide("menu");
 	show("quit");
+	show("questprog");
 	show("score");
 	switch (numjeu) {
 		case 1:
@@ -333,6 +338,7 @@
 	hide("game1");
 	hide("game2");
 	hide("trombi");
+	hide("questprog");
 	hide("score");
 	hide("quit");
 	show("messen");
@@ -387,8 +393,9 @@
 		tab_pastprop.length = 0;
 	}
 	document.title = APPNAME + "- PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("score").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP + " - ";
-	elt("score").innerHTML += "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
+	elt("questnum").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP;
+	elt("questbar").style.width = (100*scoremax/NB_MAX_PROP) + "%";
+	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
 	if (scoremax>=NB_MAX_PROP)
 	{		
@@ -396,6 +403,7 @@
 		show("menu");
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax; 
+		hide("questprog");
 	    elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
@@ -527,8 +535,9 @@
 		tab_pastprop.length = 0;
 	}
 	document.title = APPNAME + "- NOM " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("score").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_PROP + " - ";
-	elt("score").innerHTML += "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
+	elt("questnum").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_PROP;
+	elt("questbar").style.width = (100*scoremax/NB_MAX_PROP) + "%";
+	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
 	if (scoremax>=20)
 	{		
@@ -536,6 +545,7 @@
 		show("menu");
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax;
+		hide("questprog");
 		elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
@@ -681,6 +691,7 @@
 		show("reset");
 	}
 	
+	
 	if (trombi_h)
 	{
 		elt("hommes").className = "chactif";
@@ -764,7 +775,7 @@
  }
 </script>
 <BR>
-<div id="loading">
+<div id="loading" style="display:none">
 <p align="center"><img src="senanim.gif" style="vertical-align:middle" width="50" height="52" ALT="Logo">
 <span id="loadinfo">Téléchargement des données...</span>
 <div id="progressbar" style="display:none"><progress id="progress" value="0" max="100"></progress></div>
@@ -774,6 +785,7 @@
 
 <div id="messen" style="display:none">
 
+<div id="questprog" style="display:none"><div id="questbar">&nbsp;</div><span id="questnum"></span></div>
 <div id="score" style="display:none"></div>
 
 <div id="menu">
