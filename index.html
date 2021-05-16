@@ -143,7 +143,7 @@
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { hide("citation"); elt(current_tip).style.top = (e.clientY-50) + 'px'; rst_cittime(); }
+ function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
  function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
@@ -160,9 +160,7 @@
 	{
 		trombi_mode = true;
 	}
-	//ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
-	hide("loading");
-	show("messen");
+	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
 	new_cit();
 	rst_cittime();
 	
