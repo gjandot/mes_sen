@@ -12,12 +12,13 @@
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
-* écran de veille sur le menu (accueil) ?
 -->
 <title>Mes-Sen</title>
 <style>
 #messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
 #loading { font-size:1.2em; color:white; }
+#citation a { font-size:1.5em; color:black; border:1px solid white; position:absolute; top:50px; left:300px; font-family: monospace;
+		text-decoration:none; margin:20px; background-color:#AAAAAA; padding:9px; }
 #progressbar { height:50px; width:40%; margin:auto; }
 #progress { width:100%; margin:auto; }
 .gamesel { font-size:1.5em; position:relative; height:120px; width:250px; color:white; cursor:pointer; background-color:blue;
@@ -78,13 +79,13 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.017"; //G. JANDOT 15/05/2021
+ const VERNUM = "1.018"; //G. JANDOT 17/05/2021
  var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
  const MAX_NB_SEN = 500;
- const DELAY_SHORT = 900;
- const DELAY_LONG = 4000;
+ const DELAY_SHORT = 900; //ms
+ const DELAY_LONG = 4000; //ms (=4s)
  const NB_MAX_PROP = 20;
  const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
  const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
@@ -95,6 +96,7 @@
  const NBSP = "&nbsp;";
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
+ const BASE_SEN_URL = "https://www.senat.fr/";
 
  var tab_senateurs = []; //objets "senateur"
 	// .nom
@@ -119,17 +121,33 @@
  var trombi_h = true;
  var trombi_f = true;
  var current_tip = "";
+ var cit_timeout;
+ var numcit = -1;
+ const CIT_DELAY = 20000; //ms (=30s)
+ const CIT_DUR = 15000; //ms (=15s)
+ var tab_citations = [
+  ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "s20080529002.html#par_268"],
+  ["\"Écoutez-moi bien, car cela vaut son pesant de saccharine&nbsp;!\" - Pierre-Yves COLLOMBAT, 24/03/2009", "s20090324020.html#par_2965"],
+  ["\"Je crains aussi que l’immobilisme n’avance désormais en Europe et que rien ne puisse l’arrêter.\" - Jean BIZET, 11/04/2019", "s20190411011.html#par_1584"],
+  ["\"C’est un peu parallèle, mais ce n’est pas convergent&nbsp;!\" - Bruno SIDO, 17/07/2014", "s20140617020.html#par_2341"],
+  ["\"C’est une provocation que je continuerai à défendre – pardon, à dénoncer…\" - Stéphane RAVIER, 09/10/2019", "s20191009006.htmlpar_670"],
+  ["\"Personnellement, je n’ai rien contre la chirurgie esthétique, mais pas aux frais du contribuable&nbsp;!\"-  Nathalie GOULET, 04/12/2020", "s20201204005.html#par_725"],
+  ["\"Mes chers collègues&nbsp;; je vous rassure, je n’ai déposé aucun amendement visant à introduire la sexualité des bonobos dans la loi&nbsp;!\" - Pierre OUZOULIAS, 02/02/2010", "s20210202006.htmlpar_686"],
+  ["\"Je vous remercie de me ramener au calme, monsieur le président.\" - Jean DESESSARD, 18/07/2008", "/s20080718_mono.html#par_699"],
+  ["\"J’ai déjà eu l’occasion de le dire dans cet hémicycle, en Auvergne, nous appelons le Téoz le «nbsp;train Oranginanbsp;», en référence au slogannbsp;: «nbsp;Secouez-moi, secouez-moinbsp;!nbsp;».\" - Alan NÉRI, 27/11/2013",
+	"s20131127007.html#par_843"]
+ ];
 
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
- function id2img(id)    { return "https://www.senat.fr/senimg/" + id + ".jpg"; }
- function id2url(id)	{ return "https://www.senat.fr/senateur/" + id + ".html"; }
+ function flotte(e)     { hide("citation"); elt(current_tip).style.top = (e.clientY-50) + 'px'; rst_cittime(); }
+ function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
+ function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
-
+ function rnd(n)		{ return Math.floor(n*Math.random()); }
  
 //////////////////////////
  
@@ -142,7 +160,12 @@
 	{
 		trombi_mode = true;
 	}
-	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+	//ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+	hide("loading");
+	show("messen");
+	new_cit();
+	rst_cittime();
+	
  }
  
  function sen2id(nom)
@@ -161,6 +184,50 @@
 	r = r.replace(new RegExp(/[ùúûü]/g),"u");
 	r = r.replace(new RegExp(/[ýÿ]/g),"y");
 	return r;
+ }
+ 
+ function fullurl(sdate)
+ //transforme sAAAAMMJJPPP.html#par_999 en
+ //		https://www.senat.fr/seances/sAAAAMM/sAAAAMMJJ/sAAAAMMJJPPP.html#par999
+ {
+	var res = BASE_SEN_URL + "seances";
+	res = res + "/" + sdate.substring(0,7);
+	res = res + "/" + sdate.substring(0,9);
+	res = res + "/" + sdate;
+	return res;
+ }
+ 
+ 
+ function rst_cittime()
+ {
+	clearTimeout(cit_timeout);
+	cit_timeout = setTimeout(deb_cit, CIT_DELAY);
+ }
+ 
+ function deb_cit()
+ {
+	show("citation");
+	cit_timeout = setTimeout(fin_cit, CIT_DUR);
+ }
+ 
+ function fin_cit()
+ {
+	hide("citation");
+	new_cit();
+	cit_timeout = setTimeout(deb_cit, CIT_DELAY);
+ }
+ 
+ function new_cit()
+ {
+	var newcit = rnd(tab_citations.length);
+	while (newcit==numcit) //on veut éviter deux fois successivement la même citation
+	{
+		newcit = rnd(tab_citations.length);
+	}
+	numcit = newcit;
+ 	var citation = tab_citations[numcit];
+ 	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +
+				citation[0] + "</A>";
  }
  
  function parsing(texte)
@@ -326,6 +393,7 @@
  
  function launch(numjeu)
  {
+	clearTimeout(cit_timeout);
 	hide("menu");
 	show("quit");
 	show("questprog");
@@ -358,6 +426,7 @@
 	hide("quit");
 	show("messen");
 	show("menu");
+	rst_cittime();
  }
  
  function reset() // reset trombi
@@ -416,6 +485,7 @@
 	{		
 		hide("game1");
 		show("menu");
+		rst_cittime();
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax; 
 		hide("questprog");
@@ -424,38 +494,38 @@
 	}
 		
 	var n = tab_senateurs.length;
-	var num1 = Math.floor(n*Math.random());
+	var num1 = rnd(n);
 	while (!tab_senateurs[num1].imgok)
 	{
-		num1 = Math.floor(n*Math.random());
+		num1 = rnd(n);
 	}
 	var sexeref = tab_senateurs[num1].sexe;
-	var num2 = Math.floor(n*Math.random());
+	var num2 = rnd(n);
 	var sexe = tab_senateurs[num2].sexe;
 	while ((num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok))
 	{
-		num2 = Math.floor(n*Math.random());
+		num2 = rnd(n);
 		sexe = tab_senateurs[num2].sexe;
 	}
-	var num3 = Math.floor(n*Math.random());
+	var num3 = rnd(n);
 	sexe = tab_senateurs[num3].sexe;
 	while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok))
 	{
-		num3 = Math.floor(n*Math.random());
+		num3 = rnd(n);
 		sexe = tab_senateurs[num3].sexe;
 	}
-	var num4 = Math.floor(n*Math.random());
+	var num4 = rnd(n);
 	sexe = tab_senateurs[num4].sexe;
 	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok))
 	{
-		num4 = Math.floor(n*Math.random());
+		num4 = rnd(n);
 		sexe = tab_senateurs[num4].sexe;
 	}
-	var num5 = Math.floor(n*Math.random());
+	var num5 = rnd(n);
 	sexe = tab_senateurs[num5].sexe;
 	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok))
 	{
-		num5 = Math.floor(n*Math.random());
+		num5 = rnd(n);
 		sexe = tab_senateurs[num5].sexe;
 	}
 	//5 fausses réponses **différentes**
@@ -475,11 +545,11 @@
 	var prop_ok = true;
 	do
 	{
-		vnum = Math.floor(n*Math.random());
+		vnum = rnd(n);
 		sexe = tab_senateurs[vnum].sexe;
 		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok) )
 		{
-			vnum = Math.floor(n*Math.random());
+			vnum = rnd(n);
 			sexe = tab_senateurs[vnum].sexe;
 		}
 		prop_ok = true;
@@ -493,7 +563,7 @@
 	} while (!prop_ok);
 	tab_pastprop.push(vnum);
 
-	bonrep = Math.floor(5*Math.random())+1;
+	bonrep = rnd(5)+1;
 	elt("img0").src = id2img(tab_senateurs[vnum].id);
 	var varnom = "nom" + bonrep;
 	elt(varnom).innerHTML = nomcomplet(vnum);
@@ -558,6 +628,7 @@
 	{		
 		hide("game2");
 		show("menu");
+		rst_cittime();
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax;
 		hide("questprog");
@@ -566,39 +637,39 @@
 	}
 	
 	var n = tab_senateurs.length;
-	var num1 = Math.floor(n*Math.random());
+	var num1 = rnd(n);
 	while (!tab_senateurs[num1].imgok)
 	{
-		num1 = Math.floor(n*Math.random());
+		num1 = rnd(n);
 	}
 	var sexeref = tab_senateurs[num1].sexe;
 
-	var num2 = Math.floor(n*Math.random());
+	var num2 = rnd(n);
 	var sexe = tab_senateurs[num2].sexe;
 	while ((num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok))
 	{
-		num2 = Math.floor(n*Math.random());
+		num2 = rnd(n);
 		sexe = tab_senateurs[num2].sexe;
 	}
-	var num3 = Math.floor(n*Math.random());
+	var num3 = rnd(n);
 	sexe = tab_senateurs[num3].sexe;
 	while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok))
 	{
-		num3 = Math.floor(n*Math.random());
+		num3 = rnd(n);
 		sexe = tab_senateurs[num3].sexe;
 	}
-	var num4 = Math.floor(n*Math.random());
+	var num4 = rnd(n);
 	sexe = tab_senateurs[num4].sexe;
 	while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok))
 	{
-		num4 = Math.floor(n*Math.random());
+		num4 = rnd(n);
 		sexe = tab_senateurs[num4].sexe;
 	}
-	var num5 = Math.floor(n*Math.random());
+	var num5 = rnd(n);
 	sexe = tab_senateurs[num5].sexe;
 	while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok))
 	{
-		num5 = Math.floor(n*Math.random());
+		num5 = rnd(n);
 		sexe = tab_senateurs[num5].sexe;
 	}
 	//5 fausses réponses **différentes**
@@ -618,11 +689,11 @@
 	var prop_ok = true;
 	do
 	{
-		vnum = Math.floor(n*Math.random());
+		vnum = rnd(n);
 		sexe = tab_senateurs[vnum].sexe;
 		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok))
 		{
-			vnum = Math.floor(n*Math.random());
+			vnum = rnd(n);
 			sexe = tab_senateurs[vnum].sexe;
 		}
 		prop_ok = true;
@@ -636,7 +707,7 @@
 	} while (!prop_ok);
 	tab_pastprop.push(vnum);
 	
-	bonrep = Math.floor(5*Math.random())+1;
+	bonrep = rnd(5)+1;
 	elt("nom0").innerHTML= nomcomplet(vnum);
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(tab_senateurs[vnum].id);
@@ -778,15 +849,10 @@
 			}
 		}
 	}
-	//show("vide");
+
 	var cptsen = 0;
 	for (i=0; i<tab_senateurs.length; i++)
 	{
-		/*if (elt(tab_senateurs[i].id).style.display == "")
-		{
-			hide("vide");
-			break;
-		}*/
 		if (elt(tab_senateurs[i].id).style.display == "")
 		{
 			cptsen++;
@@ -831,6 +897,8 @@
 		>Trombi</div>
 <div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif</div>
 </div> <!--/menu-->
+
+<div id="citation" style="display:none"></div>
 
 <div id="game1" style="display:none">
 <img id="img0" title="Il faut cliquer sur le nom qui correspond à cette photo.">
