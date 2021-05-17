@@ -123,7 +123,7 @@
  var current_tip = "";
  var cit_timeout;
  var numcit = -1;
- const CIT_DELAY = 20000; //ms (=30s)
+ const CIT_DELAY = 45000; //ms (=45s)
  const CIT_DUR = 15000; //ms (=15s)
  var tab_citations = [
   ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "s20080529002.html#par_268"],
@@ -134,7 +134,7 @@
   ["\"Personnellement, je n’ai rien contre la chirurgie esthétique, mais pas aux frais du contribuable&nbsp;!\"-  Nathalie GOULET, 04/12/2020", "s20201204005.html#par_725"],
   ["\"Mes chers collègues&nbsp;; je vous rassure, je n’ai déposé aucun amendement visant à introduire la sexualité des bonobos dans la loi&nbsp;!\" - Pierre OUZOULIAS, 02/02/2010", "s20210202006.htmlpar_686"],
   ["\"Je vous remercie de me ramener au calme, monsieur le président.\" - Jean DESESSARD, 18/07/2008", "/s20080718_mono.html#par_699"],
-  ["\"J’ai déjà eu l’occasion de le dire dans cet hémicycle, en Auvergne, nous appelons le Téoz le «nbsp;train Oranginanbsp;», en référence au slogannbsp;: «nbsp;Secouez-moi, secouez-moinbsp;!nbsp;».\" - Alan NÉRI, 27/11/2013",
+  ["\"J’ai déjà eu l’occasion de le dire dans cet hémicycle, en Auvergne, nous appelons le Téoz le «&nbsp;train Orangina&nbsp;», en référence au slogan&nbsp;: «&nbsp;Secouez-moi, secouez-moinbsp;!&nbsp;».\" - Alan NÉRI, 27/11/2013",
 	"s20131127007.html#par_843"]
  ];
 
@@ -143,7 +143,7 @@
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
+ function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; rst_cittime(); }
  function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
