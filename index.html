@@ -12,13 +12,14 @@
 * délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
+* gestion clavier ?
 -->
 <title>Mes-Sen</title>
 <style>
 #messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
 #loading { font-size:1.2em; color:white; }
-#citation a { font-size:1.5em; color:black; border:1px solid white; position:absolute; top:50px; left:300px; font-family: monospace;
-		text-decoration:none; margin:20px; background-color:#AAAAAA; padding:9px; }
+#citation { border:1px solid white; position:absolute; left:275px; margin:20px; background-color:#AAAAAA; padding:9px; }
+#citation a { font-size:1.3em; color:black;  text-decoration:none; font-family: monospace; 	}
 #progressbar { height:50px; width:40%; margin:auto; }
 #progress { width:100%; margin:auto; }
 .gamesel { font-size:1.5em; position:relative; height:120px; width:250px; color:white; cursor:pointer; background-color:blue;
@@ -72,14 +73,14 @@
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
 </head>
-<body onload="start()" style="user-select:none">
+<body onload="start()" onmousemove="rst_cittime()" style="user-select:none"> 
 <script type="text/javascript">
 //
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.018"; //G. JANDOT 17/05/2021
+ const VERNUM = "1.019"; //G. JANDOT 18/05/2021
  var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
@@ -123,19 +124,29 @@
  var current_tip = "";
  var cit_timeout;
  var numcit = -1;
+ var cancit = false;
  const CIT_DELAY = 45000; //ms (=45s)
  const CIT_DUR = 15000; //ms (=15s)
  var tab_citations = [
-  ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "s20080529002.html#par_268"],
-  ["\"Écoutez-moi bien, car cela vaut son pesant de saccharine&nbsp;!\" - Pierre-Yves COLLOMBAT, 24/03/2009", "s20090324020.html#par_2965"],
-  ["\"Je crains aussi que l’immobilisme n’avance désormais en Europe et que rien ne puisse l’arrêter.\" - Jean BIZET, 11/04/2019", "s20190411011.html#par_1584"],
-  ["\"C’est un peu parallèle, mais ce n’est pas convergent&nbsp;!\" - Bruno SIDO, 17/07/2014", "s20140617020.html#par_2341"],
-  ["\"C’est une provocation que je continuerai à défendre – pardon, à dénoncer…\" - Stéphane RAVIER, 09/10/2019", "s20191009006.htmlpar_670"],
-  ["\"Personnellement, je n’ai rien contre la chirurgie esthétique, mais pas aux frais du contribuable&nbsp;!\"-  Nathalie GOULET, 04/12/2020", "s20201204005.html#par_725"],
-  ["\"Mes chers collègues&nbsp;; je vous rassure, je n’ai déposé aucun amendement visant à introduire la sexualité des bonobos dans la loi&nbsp;!\" - Pierre OUZOULIAS, 02/02/2010", "s20210202006.htmlpar_686"],
-  ["\"Je vous remercie de me ramener au calme, monsieur le président.\" - Jean DESESSARD, 18/07/2008", "/s20080718_mono.html#par_699"],
-  ["\"J’ai déjà eu l’occasion de le dire dans cet hémicycle, en Auvergne, nous appelons le Téoz le «&nbsp;train Orangina&nbsp;», en référence au slogan&nbsp;: «&nbsp;Secouez-moi, secouez-moinbsp;!&nbsp;».\" - Alan NÉRI, 27/11/2013",
-	"s20131127007.html#par_843"]
+  ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "20080529#par_268"],
+  ["\"Écoutez-moi bien, car cela vaut son pesant de saccharine&nbsp;!\" - Pierre-Yves COLLOMBAT, 24/03/2009", "20090324#par_2965"],
+  ["\"Je crains aussi que l’immobilisme n’avance désormais en Europe et que rien ne puisse l’arrêter.\" - Jean BIZET, 11/04/2019", "20190411#par_1584"],
+  ["\"C’est un peu parallèle, mais ce n’est pas convergent&nbsp;!\" - Bruno SIDO, 17/07/2014", "20140617#par_2341"],
+  ["\"C’est une provocation que je continuerai à défendre – pardon, à dénoncer…\" - Stéphane RAVIER, 09/10/2019", "20191009#par_670"],
+  ["\"Personnellement, je n’ai rien contre la chirurgie esthétique, mais pas aux frais du contribuable&nbsp;!\"-  Nathalie GOULET, 04/12/2020", "20201204#par_725"],
+  ["\"Je vous rassure, je n’ai déposé aucun amendement visant à introduire la sexualité des bonobos dans la loi&nbsp;!\" - Pierre OUZOULIAS, 02/02/2010",
+		"20210202#par_686"],
+  ["\"Je vous remercie de me ramener au calme, monsieur le président.\" - Jean DESESSARD, 18/07/2008", "20080718#par_699"],
+  ["\"En Auvergne, nous appelons le Téoz le «&nbsp;train Orangina&nbsp;», en référence au slogan&nbsp;: «&nbsp;Secouez-moi, secouez-moi&nbsp;!&nbsp;».\" - Alan NÉRI, 27/11/2013",
+		"20131127#par_843"],
+  ["\"Nous pouvons néanmoins nous asseoir sur la Constitution italienne […]\" - Jean-Baptiste LEMOYNE, 29 mai 2018", "20180529#par_417"],
+  ["\"Voyage voyage, disait Desireless, célèbre chanteuse des années&nbsp;80.\" - Patrick KANNER, 4 octobre 2016", "20161004#par_2581"],
+  ["\"C’est à la fin de la foire qu’on compte les bouses, comme vous le savez.\" - Jérôme DURAIN, 20 mars 2018", "20180320#par_901"],
+  ["\"Au pays des sourds, les aveugles sont rois&nbsp;!\" - Yves DAUDIGNY, 26 octobre 2010", "20101026#par_463"],
+  ["\"On ne saurait faire aboyer les chats&nbsp;!\" - René VANDIERENDONCK, 16 juillet 2015", "20150716#par_302"],
+  ["\"Cependant, bien qu’étant membre de cette assemblée depuis seulement un an, je ne suis pas un pigeon de l’année…\" - Gérard ROCHE, 17 janvier 2013",
+		"20130117#par_638"],
+  ["\"[…] vous êtes comme les fraises d’hiver&nbsp;: vous êtes hors sol&nbsp;!\" - Pierre CHARON, 28 avril 2016", "20160428#par_1042" ]
  ];
 
  
@@ -143,7 +154,7 @@
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; rst_cittime(); }
+ function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
  function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
@@ -161,9 +172,6 @@
 		trombi_mode = true;
 	}
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
-	new_cit();
-	rst_cittime();
-	
  }
  
  function sen2id(nom)
@@ -185,21 +193,28 @@
  }
  
  function fullurl(sdate)
- //transforme sAAAAMMJJPPP.html#par_999 en
- //		https://www.senat.fr/seances/sAAAAMM/sAAAAMMJJ/sAAAAMMJJPPP.html#par999
+ //transforme AAAAMMJJ#par_9999 en
+ //		https://www.senat.fr/seances/sAAAAMM/sAAAAMMJJ/sAAAAMMJJPPP.html#par_9999
  {
 	var res = BASE_SEN_URL + "seances";
-	res = res + "/" + sdate.substring(0,7);
-	res = res + "/" + sdate.substring(0,9);
-	res = res + "/" + sdate;
+	res = res + "/s" + sdate.substring(0,6);
+	res = res + "/s" + sdate.substring(0,8);
+	res = res + "/s" + sdate.substring(0,8) + "_mono.html" + sdate.substring(8);
 	return res;
  }
  
  
  function rst_cittime()
+ //called on every mouse move (body onmousemove)
  {
-	clearTimeout(cit_timeout);
-	cit_timeout = setTimeout(deb_cit, CIT_DELAY);
+	if (!cancit) { return; }
+	if (elt("citation").style.display=="none")
+	//si une citation est affichée, on ne veut pas remettre le timer
+	// (qui s'applique alors à la durée d'affichage) à zéro
+	{
+		clearTimeout(cit_timeout);
+		cit_timeout = setTimeout(deb_cit, CIT_DELAY);
+	} 
  }
  
  function deb_cit()
@@ -224,8 +239,8 @@
 	}
 	numcit = newcit;
  	var citation = tab_citations[numcit];
- 	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +
-				citation[0] + "</A>";
+	elt("citation").style.top= rnd(300)+"px";
+ 	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
  }
  
  function parsing(texte)
@@ -360,6 +375,10 @@
 		else
 		{
 			show("messen");
+			cancit = true;
+			new_cit();
+			rst_cittime();
+			
 			if (nb_imgerr > (tab_senateurs.length/10))
 			{
 				elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
@@ -392,6 +411,8 @@
  function launch(numjeu)
  {
 	clearTimeout(cit_timeout);
+	hide("citation");
+	cancit = false;
 	hide("menu");
 	show("quit");
 	show("questprog");
@@ -424,6 +445,7 @@
 	hide("quit");
 	show("messen");
 	show("menu");
+	cancit = true;
 	rst_cittime();
  }
  
