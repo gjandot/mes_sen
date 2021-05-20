@@ -9,7 +9,6 @@
 * guest stars (anciens sénateurs)
 * noms inventés
 * prénoms changés
-* délai de réponse max
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
 * gestion clavier ?
@@ -30,6 +29,8 @@
 .tooltip:before { content:""; position:absolute; left:-15px; top:15px; 
 			border-top:15px solid transparent; border-right:16px solid black; border-bottom:15px solid transparent;}
 #score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; float:right; }
+#temps { font-size:2em; height:40px; width:40px; border-radius:50%; text-align:center;
+			border:3px solid white; color:black; background-color:blue; margin:9px; padding:3px; float:right; }
 #questprog { border:1px solid white; color:white; background-color:#222266; padding:7px; border-radius:12px; position:relative; }
 #questbar { background-color:blue; width:50%; border-radius:9px; padding-top:5px; padding-bottom:5px; }
 #questnum { text-align:center; width:100%; position:absolute; top:11px;}
@@ -80,7 +81,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.019"; //G. JANDOT 18/05/2021
+ const VERNUM = "1.020"; //G. JANDOT 20/05/2021
  var trombi_mode = false;
 
  const MIN_NB_SEN = 200;
@@ -94,6 +95,7 @@
  const NO_GROUP = "-Tous les groupes-";
  const NO_COMM = "-Toutes les commissions-";
  const NO_FILTER = "-filtre-"; //lowercase
+ const NOFILT_COLOR = "#BBBBBB";
  const NBSP = "&nbsp;";
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
@@ -117,11 +119,16 @@
  var bonrep = 0;
  var score = 0;
  var scoremax = 0;
+ var temps = 0;
+ var hordeb = Date.now();
+ const TEMPS_MAX = 9000; //ms (=9s)
  var async_cpt = 0;
  var nb_imgerr = 0;
  var trombi_h = true;
  var trombi_f = true;
- var current_tip = "";
+ var cur_tip = "";
+ var cur_game = 0;
+ var tps_timeout;
  var cit_timeout;
  var numcit = -1;
  var cancit = false;
@@ -146,7 +153,11 @@
   ["\"On ne saurait faire aboyer les chats&nbsp;!\" - René VANDIERENDONCK, 16 juillet 2015", "20150716#par_302"],
   ["\"Cependant, bien qu’étant membre de cette assemblée depuis seulement un an, je ne suis pas un pigeon de l’année…\" - Gérard ROCHE, 17 janvier 2013",
 		"20130117#par_638"],
-  ["\"[…] vous êtes comme les fraises d’hiver&nbsp;: vous êtes hors sol&nbsp;!\" - Pierre CHARON, 28 avril 2016", "20160428#par_1042" ]
+  ["\"[…] vous êtes comme les fraises d’hiver&nbsp;: vous êtes hors sol&nbsp;!\" - Pierre CHARON, 28 avril 2016", "20160428#par_1042" ],
+  ["\"C’est un peu comme si l’on confiait au cow-boy Marlboro une enquête sur les méfaits du tabac.\" - Claude MALHURET, 30 mars 2021", "20210330#par_349"],
+  ["\"Vu la dette que nous laisserons à nos enfants, nous ne devrons plus être surpris que les bébés crient à la naissance.\" - Claude MALHURET, 16 juillet 2020", "20200716#par_312"],
+  ["\"Je voudrais simplement savoir si notre présence dans cet hémicycle, nos délibérations ne gênent pas trop les travaux des entreprises qui interviennent actuellement un peu partout dans le Sénat.\" - Michel CHARASSE, 19 juin 2008",
+		"20080619#par_31"]
  ];
 
  
@@ -154,7 +165,7 @@
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { elt(current_tip).style.top = (e.clientY-50) + 'px'; }
+ function flotte(e)     { elt(cur_tip).style.top = (e.clientY-50) + 'px'; }
  function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
@@ -193,8 +204,8 @@
  }
  
  function fullurl(sdate)
- //transforme AAAAMMJJ#par_9999 en
- //		https://www.senat.fr/seances/sAAAAMM/sAAAAMMJJ/sAAAAMMJJPPP.html#par_9999
+ //transforme AAAAMMJJ#refname en
+ //		https://www.senat.fr/seances/sAAAAMM/sAAAAMMJJ/sAAAAMMJJ_mono.html#refname
  {
 	var res = BASE_SEN_URL + "seances";
 	res = res + "/s" + sdate.substring(0,6);
@@ -241,6 +252,31 @@
  	var citation = tab_citations[numcit];
 	elt("citation").style.top= rnd(300)+"px";
  	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
+ }
+ 
+ function showtime()
+ {
+	elt("temps").style.backgroundColor = "blue";
+	temps = Date.now()-hordeb;
+	var tps = Math.ceil((TEMPS_MAX-temps)/1000);
+	elt("temps").innerHTML = tps;
+	if (tps>0)
+	{
+		if (tps<6)
+		{
+			elt("temps").style.backgroundColor = "yellow";
+		}
+		if (tps<3)
+		{
+			elt("temps").style.backgroundColor = "red";
+		}
+		tps_timeout = setTimeout(showtime, 500);
+	}
+	else
+	{
+		if (cur_game==1) { verif1(0); }
+		if (cur_game==2) { verif2(0); }
+	}
  }
  
  function parsing(texte)
@@ -323,7 +359,7 @@
 		elt("loadinfo").innerHTML = "Préparation des données...";
 		elt("progress").max = tab_senateurs.length;
 		show("progressbar");
-		setTimeout(fill_trombi, 0);
+		setTimeout(fill_trombi, 0); //async to allow UI updates (animated gif + progressbar)
 	 }
  }
  
@@ -396,7 +432,8 @@
 	if (!httpRequest){ return false; }
 	httpRequest.onreadystatechange=function()
 	{
-		try {
+		try
+		{
 			if (httpRequest.readyState===XMLHttpRequest.DONE && httpRequest.status===200)
 			{
 				callback(httpRequest.responseText);
@@ -417,16 +454,20 @@
 	show("quit");
 	show("questprog");
 	show("score");
-	switch (numjeu) {
+	switch (numjeu)
+	{
 		case 1:
 			show("game1");
+			cur_game = 1;
 			game1(-1);
 			break
 		case 2:
 			show("game2");
+			cur_game = 2;
 			game2(-1);
 			break;
 		case 3:
+			cur_game = 0;
 			hide("messen");
 			show("trombi");
 			document.title = APPNAME + "- Trombi";
@@ -436,12 +477,15 @@
  
  function quit() //exit trombi
  {
+	cur_game = 0;
+	clearTimeout(tps_timeout);
 	document.title = APPNAME;
 	hide("game1");
 	hide("game2");
 	hide("trombi");
 	hide("questprog");
 	hide("score");
+	hide("temps");
 	hide("quit");
 	show("messen");
 	show("menu");
@@ -457,7 +501,7 @@
 	elt("selgrp").selectedIndex = 0;
 	elt("selcom").selectedIndex = 0;
 	elt("filtre").value = NO_FILTER;
-	elt("filtre").style.color = "#BBBBBB";
+	elt("filtre").style.color = NOFILT_COLOR;
 	majtrombi(0);
  }
  
@@ -477,6 +521,10 @@
  
  function game1(val)
  {
+	if (cur_game==0) //abandon
+	{
+		return;
+	}
 	hide("nomok");
 	hide("imgindic");
 	hide("nomno");
@@ -506,6 +554,7 @@
 		hide("game1");
 		show("menu");
 		rst_cittime();
+		hide("temps");
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax; 
 		hide("questprog");
@@ -593,10 +642,15 @@
 	show("nom3");
 	show("nom4");
 	show("nom5");
+	show("temps");
+	hordeb = Date.now();
+	showtime();
  }
  
  function verif1(rep)
  {
+	clearTimeout(tps_timeout);
+	hide("temps");
 	hide("nom1");
 	hide("nom2");
 	hide("nom3");
@@ -604,7 +658,8 @@
 	hide("nom5");
 	show("nomok");
 	var delay = DELAY_SHORT;
-	if (rep!==bonrep) {
+	if ((rep!==bonrep) && (rep>0)) //rep==0 : time's out
+	{
 		delay = DELAY_LONG;
 		elt("nomno").innerHTML = UTF8_CROSS_MARK + NBSP + elt("nom"+rep).innerHTML;
 		show("nomno");
@@ -612,14 +667,26 @@
 		show("imgindic");
 	}
 	else
-	{
-		elt("nomok").innerHTML = UTF8_CHECK_MARK + NBSP + elt("nomok").innerHTML;
+	{	
+		if (rep==0)
+		{
+			delay = DELAY_LONG;
+			elt("nomok").innerHTML = NBSP + elt("nomok").innerHTML;
+		}
+		else
+		{
+			elt("nomok").innerHTML = UTF8_CHECK_MARK + NBSP + elt("nomok").innerHTML;
+		}	
 	}
 	setTimeout(function(){ game1(rep); }, delay);
  }
 
  function game2(val)
  {
+	if (cur_game==0) //abandon
+	{
+		return;
+	}
  	hide("imgok");
 	hide("nomindic");
 	hide("imgno");
@@ -649,6 +716,7 @@
 		hide("game2");
 		show("menu");
 		rst_cittime();
+		hide("temps");
 		hide("quit");
 		document.title = "SCORE FINAL = " + score + "/" + scoremax;
 		hide("questprog");
@@ -737,10 +805,15 @@
 	show("img3");
 	show("img4");
 	show("img5");
+	show("temps");
+	hordeb = Date.now();
+	showtime();
  }
  
  function verif2(rep)
  {
+	clearTimeout(tps_timeout);
+	hide("temps");
  	hide("img1");
 	hide("img2");
 	hide("img3");
@@ -748,12 +821,17 @@
 	hide("img5");
 	show("imgok");
 	var delay = DELAY_SHORT;
-	if (rep!==bonrep) {
+	if ((rep!==bonrep) && (rep>0)) //rep==0 : time's out
+	{
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
 		show("imgno");
 		elt("nomindic").innerHTML = nomcomplet(tab_bonrep[rep-1]);
 		show("nomindic");
+	}
+	if (rep==0)
+	{
+		delay = DELAY_LONG;
 	}
 	setTimeout(function(){ game2(rep); }, delay);
  }
@@ -764,6 +842,15 @@
 	{
 		elt("filtre").value = "";
 		elt("filtre").style.color = "black";
+	}
+ }
+ 
+ function veriffilter()
+ {
+	if (elt("filtre").value.trim().length==0)
+	{
+		elt("filtre").value = NO_FILTER;
+		elt("filtre").style.color = NOFILT_COLOR;
 	}
  }
 
@@ -902,18 +989,19 @@
 
 <div id="questprog" style="display:none"><div id="questbar">&nbsp;</div><span id="questnum"></span></div>
 <div id="score" style="display:none"></div>
+<div id="temps" style="display:none"></div>
 
 <div id="menu">
 <div id="c1" onclick="launch(1)" class="gamesel"
-		onmouseenter="current_tip='tip1'; show('tip1')" onmouseleave="hide('tip1')" onmousemove="flotte(event)"
+		onmouseenter="cur_tip='tip1'; show('tip1')" onmouseleave="hide('tip1')" onmousemove="flotte(event)"
 		>"Quel nom&nbsp;?"</div>
 <div id="tip1" style="display:none" class="tooltip">Pour 1 photo, 5 noms.<BR>Il faut trouver le bon.</div>
 <div id="c2" onclick="launch(2)" class="gamesel"
-		onmouseenter="current_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
+		onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
 		>"Quelle photo&nbsp;?"</div>
 <div id="tip2" style="display:none" class="tooltip">Pour 1 nom, 5 photos.<BR>Il faut trouver la bonne.</div>
 <div id="c3" onclick="launch(3)" class="gamesel"
-			onmouseenter="current_tip='tip3'; show('tip3')" onmouseleave="hide('tip3')" onmousemove="flotte(event)"
+			onmouseenter="cur_tip='tip3'; show('tip3')" onmouseleave="hide('tip3')" onmousemove="flotte(event)"
 		>Trombi</div>
 <div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif</div>
 </div> <!--/menu-->
@@ -953,7 +1041,8 @@
 <span id="femmes" onclick="majtrombi(2)" class="chactif">Femmes</span>&nbsp;
 <select id="selgrp" onchange="majtrombi(0)" title="Sélection d'un groupe politique"></select>
 <select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
-<input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" title="Filtre sur les noms et prénoms">
+<input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" onfocusout="veriffilter()"
+		title="Filtre sur les noms et prénoms">
 <button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
 <span id="nbsen" title="Compteur de résultats"></span>
 <button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les filtres de recherche">Réinitialiser</button>
@@ -962,7 +1051,7 @@
 <div id="vide" class="senelt" style="display:none">Aucun résultat.</div>
 </div> <!--/trombi-->
 
-<div id="version" title="testée sous Windows 10 avec Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/">Version <span id="vernum">0.000</span></A></div>
-
+<div id="version" title="testée sous Windows 10 avec Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/"
+TARGET="_blank">Version <span id="vernum">0.000</span></A></div>
 </body>
 </html>
