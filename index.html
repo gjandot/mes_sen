@@ -51,7 +51,7 @@
 #nomindic { font-size:1.1em; color:#FF8888; }
 
 #trombi { color:white; }
-#tools { position:fixed; top:0; background-color:black; width:100%; padding:20px; }
+#tools { position:fixed; top:0; background-color:black; width:100%; padding:15px; }
 #listsen { padding-top:45px; }
 #nbsen { font-size:1.3em; color:white; border:2px solid white; border-radius:50%; margin-left:50px; padding:5px; background-color:#888888; }
 .chactif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
@@ -73,16 +73,15 @@
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
-</head>
-<body onload="start()" onmousemove="rst_cittime()" style="user-select:none"> 
 <script type="text/javascript">
 //
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.020"; //G. JANDOT 20/05/2021
+ const VERNUM = "1.021"; //G. JANDOT 21/05/2021
  var trombi_mode = false;
+ var can_trombi = true;
 
  const MIN_NB_SEN = 200;
  const MAX_NB_SEN = 500;
@@ -151,9 +150,9 @@
   ["\"C’est à la fin de la foire qu’on compte les bouses, comme vous le savez.\" - Jérôme DURAIN, 20 mars 2018", "20180320#par_901"],
   ["\"Au pays des sourds, les aveugles sont rois&nbsp;!\" - Yves DAUDIGNY, 26 octobre 2010", "20101026#par_463"],
   ["\"On ne saurait faire aboyer les chats&nbsp;!\" - René VANDIERENDONCK, 16 juillet 2015", "20150716#par_302"],
-  ["\"Cependant, bien qu’étant membre de cette assemblée depuis seulement un an, je ne suis pas un pigeon de l’année…\" - Gérard ROCHE, 17 janvier 2013",
+  ["\"Bien qu’étant membre de cette assemblée depuis seulement un an, je ne suis pas un pigeon de l’année…\" - Gérard ROCHE, 17 janvier 2013",
 		"20130117#par_638"],
-  ["\"[…] vous êtes comme les fraises d’hiver&nbsp;: vous êtes hors sol&nbsp;!\" - Pierre CHARON, 28 avril 2016", "20160428#par_1042" ],
+  ["\"Vous êtes comme les fraises d’hiver&nbsp;: vous êtes hors sol&nbsp;!\" - Pierre CHARON, 28 avril 2016", "20160428#par_1042" ],
   ["\"C’est un peu comme si l’on confiait au cow-boy Marlboro une enquête sur les méfaits du tabac.\" - Claude MALHURET, 30 mars 2021", "20210330#par_349"],
   ["\"Vu la dette que nous laisserons à nos enfants, nous ne devrons plus être surpris que les bébés crient à la naissance.\" - Claude MALHURET, 16 juillet 2020", "20200716#par_312"],
   ["\"Je voudrais simplement savoir si notre présence dans cet hémicycle, nos délibérations ne gênent pas trop les travaux des entreprises qui interviennent actuellement un peu partout dans le Sénat.\" - Michel CHARASSE, 19 juin 2008",
@@ -175,13 +174,30 @@
  
  function start()
  {
-	document.body.style.backgroundColor = "black";
-	show("loading");
-	elt("vernum").innerHTML = VERNUM;
-	if (window.location.search.toLowerCase() == "?trombi")
+ 	if (window.location.search.toLowerCase() == "?trombi")
 	{
 		trombi_mode = true;
 	}
+	var navtype = navigator.userAgent.toLowerCase();
+	if (navtype.indexOf("firefox")==-1)
+	{
+		if (trombi_mode)
+		{
+			elt("error").innerHTML = "Pour l'instant, le <B>trombi</B> ne fonctionne correctement qu'avec <I>Firefox</I>.";
+			show("error");
+			return;
+		}
+		else
+		{
+			can_trombi = false;
+			hide("c3");
+		}
+	}
+
+	document.body.style.backgroundColor = "black";
+	show("loading");
+	elt("vernum").innerHTML = VERNUM;
+
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
  }
  
@@ -256,7 +272,7 @@
  
  function showtime()
  {
-	elt("temps").style.backgroundColor = "blue";
+	elt("temps").style.backgroundColor = NOFILT_COLOR;
 	temps = Date.now()-hordeb;
 	var tps = Math.ceil((TEMPS_MAX-temps)/1000);
 	elt("temps").innerHTML = tps;
@@ -281,6 +297,7 @@
  
  function parsing(texte)
  {
+
 	var jsonobj = JSON.parse(texte);
 	var jsen = jsonobj['senateurs'];
 	
@@ -323,7 +340,7 @@
 			{
 				senateur.groupe = jsen[i]['groupe_politique']['nom_court'];
 			}
-			catch
+			catch(e)
 			//en début de mandat, le groupe n'est pas précisé immédiatement
 			{
 				senateur.groupe = "";
@@ -333,7 +350,7 @@
 			{
 				senateur.comm = jsen[i]['commission_permanente']['nom_court'];
 			}
-			catch
+			catch(e)
 			//le/la président.e du Sénat n'appartient à aucune commission permanente
 			{
 				senateur.comm = "";
@@ -355,11 +372,19 @@
 			}
 		}
 		
-		async_cpt = 0;
-		elt("loadinfo").innerHTML = "Préparation des données...";
-		elt("progress").max = tab_senateurs.length;
-		show("progressbar");
-		setTimeout(fill_trombi, 0); //async to allow UI updates (animated gif + progressbar)
+		if (can_trombi)
+		{
+			async_cpt = 0;
+			elt("loadinfo").innerHTML = "Préparation des données...";
+			elt("progress").max = tab_senateurs.length;
+			show("progressbar");
+			setTimeout(fill_trombi, 0); //async to allow UI updates (animated gif + progressbar)
+		}
+		else
+		{
+			hide("loading");
+			showmenu();
+		}
 	 }
  }
  
@@ -410,20 +435,25 @@
 		}
 		else
 		{
-			show("messen");
-			cancit = true;
-			new_cit();
-			rst_cittime();
-			
-			if (nb_imgerr > (tab_senateurs.length/10))
-			{
-				elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
-				show("error");
-				hide("c1");
-				hide("c2");
-			}
+			showmenu();
 		}
 	}
+ }
+ 
+ function showmenu()
+ {
+	show("messen");
+	cancit = true;
+	new_cit();
+	rst_cittime();
+	
+	if (nb_imgerr > (tab_senateurs.length/10))
+	{
+		elt("error").innerHTML = "Trop de photographies (" + nb_imgerr + ") sont manquantes.";
+		show("error");
+		hide("c1");
+		hide("c2");
+	} 
  }
 
  function ajax(url,callback)
@@ -976,7 +1006,8 @@
 	}
  }
 </script>
-<BR>
+</head>
+<body onload="start()" onmousemove="rst_cittime()" style="user-select:none">
 <div id="loading" style="display:none">
 <p align="center"><img src="senanim.gif" style="vertical-align:middle" width="50" height="52" ALT="Logo">
 <span id="loadinfo">Téléchargement des données...</span>
