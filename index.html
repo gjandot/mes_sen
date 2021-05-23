@@ -58,7 +58,8 @@
 .chinactif { color:red; text-decoration:line-through; cursor:pointer; } 
 .imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
 .infotrombi { float:right; padding-left:5px;}
-.senelt { color:white; text-decoration:none; border:1px solid grey; width:22%; padding:3px; margin:9px; box-shadow:3px 3px 5px white; display:inline flex; }
+.senelt { color:white; text-decoration:none; border:1px solid grey; width:22%;
+			padding:3px; margin:9px; box-shadow:3px 3px 5px white; display:inline-flex; }
 .senelt:hover { background-color:#C80947; }
 .senelt a { color:white; text-decoration:none; }
 .sennom { font-weight:bold; margin-bottom:20px; }
@@ -79,9 +80,12 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.021"; //G. JANDOT 21/05/2021
- var trombi_mode = false;
- var can_trombi = true;
+ const VERNUM = "1.022"; //G. JANDOT 22/05/2021
+
+ const TROMBI_OFF = -1;
+ const TROMBI_NORMAL = 0;
+ const TROMBI_ONLY = 1;
+ var trombi_mode = TROMBI_NORMAL;
 
  const MIN_NB_SEN = 200;
  const MAX_NB_SEN = 500;
@@ -174,24 +178,16 @@
  
  function start()
  {
- 	if (window.location.search.toLowerCase() == "?trombi")
+	//default : trombi_mode = TROMBI_NORMAL
+	var param = window.location.search.toLowerCase(); 
+ 	if (param == "?trombi=0")
 	{
-		trombi_mode = true;
+		trombi_mode = TROMBI_OFF;
 	}
-	var navtype = navigator.userAgent.toLowerCase();
-	if (navtype.indexOf("firefox")==-1)
+
+ 	if ( (param == "?trombi=1") || (param=="?trombi") )
 	{
-		if (trombi_mode)
-		{
-			elt("error").innerHTML = "Pour l'instant, le <B>trombi</B> ne fonctionne correctement qu'avec <I>Firefox</I>.";
-			show("error");
-			return;
-		}
-		else
-		{
-			can_trombi = false;
-			hide("c3");
-		}
+		trombi_mode = TROMBI_ONLY;
 	}
 
 	document.body.style.backgroundColor = "black";
@@ -372,20 +368,21 @@
 			}
 		}
 		
-		if (can_trombi)
+		if (trombi_mode==TROMBI_OFF)
 		{
-			async_cpt = 0;
-			elt("loadinfo").innerHTML = "Préparation des données...";
-			elt("progress").max = tab_senateurs.length;
-			show("progressbar");
-			setTimeout(fill_trombi, 0); //async to allow UI updates (animated gif + progressbar)
+			hide("loading");
+			hide("c3");
+			showmenu();
 		}
 		else
 		{
-			hide("loading");
-			showmenu();
+			async_cpt = 0;
+			elt("loadinfo").innerHTML = "";
+			elt("progress").max = tab_senateurs.length;
+			show("progressbar");
+			fill_trombi();
 		}
-	 }
+	}
  }
  
  function imgerr(numsen)
@@ -407,9 +404,10 @@
 	
 	async_cpt++;
 	elt("progress").value = async_cpt;
+	elt("loadinfo").innerHTML = "Préparation du trombi (" +  async_cpt + "/" + tab_senateurs.length + ")";
 	if (async_cpt<tab_senateurs.length)
 	{
-		setTimeout(fill_trombi, 0);
+		setTimeout(fill_trombi, 0); ////async to allow UI updates (animated gif + progressbar)
 	}
 	else
 	{
@@ -427,8 +425,8 @@
 		{
 			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>"
 		}
-		reset(); //init trombi
-		if (trombi_mode)
+		reset_trombi(); //init trombi
+		if (trombi_mode==TROMBI_ONLY)
 		{
 			hide("return");
 			launch(3);
@@ -523,7 +521,7 @@
 	rst_cittime();
  }
  
- function reset() // reset trombi
+ function reset_trombi()
  {
 	hide("reset");
 	trombi_h = true;
@@ -1073,16 +1071,15 @@
 <select id="selgrp" onchange="majtrombi(0)" title="Sélection d'un groupe politique"></select>
 <select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
 <input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" onfocusout="veriffilter()"
-		title="Filtre sur les noms et prénoms">
+		title="Filtre textuel sur les noms et prénoms">
 <button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
-<span id="nbsen" title="Compteur de résultats"></span>
-<button id="reset" onclick="reset()" style="display:none" class="bouton reset" title="Effacer les filtres de recherche">Réinitialiser</button>
+<id id="nbsen" title="Compteur de résultats"></id>
+<button id="reset" onclick="reset_trombi()" style="display:none" class="bouton reset" title="Effacer tous les filtres de recherche">Réinitialiser</button>
 </div> <!--tools-->
 <div id="listsen"></div>
-<div id="vide" class="senelt" style="display:none">Aucun résultat.</div>
+<div id="vide" class="senelt" style="display:none" title="(personne)">Aucun résultat.</div>
 </div> <!--/trombi-->
 
-<div id="version" title="testée sous Windows 10 avec Firefox 78.9.0esr"><A HREF="https://github.com/gjandot/mes_sen/"
-TARGET="_blank">Version <span id="vernum">0.000</span></A></div>
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/" TARGET="_blank">Version <span id="vernum">0.000</span></A></div>
 </body>
 </html>
