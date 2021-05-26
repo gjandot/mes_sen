@@ -5,13 +5,14 @@
 <meta charset="UTF-8">
 <!--IDs
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
+* plusieurs durées (nombres de questions)
 * plusieurs difficultés (nombres de propositions)
-* guest stars (anciens sénateurs)
-* noms inventés
 * prénoms changés
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
 * gestion clavier ?
+
+// guest stars (anciens sénateurs)
 -->
 <title>Mes-Sen</title>
 <style>
@@ -80,7 +81,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.022"; //G. JANDOT 22/05/2021
+ const VERNUM = "1.023"; //G. JANDOT 25/05/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -103,6 +104,9 @@
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
  const BASE_SEN_URL = "https://www.senat.fr/";
+ const CIVIL_HOMME = "M.";
+ const SEXE_HOMME = "H";
+ const SEXE_FEMME = "F";
 
  var tab_senateurs = []; //objets "senateur"
 	// .nom
@@ -160,9 +164,48 @@
   ["\"C’est un peu comme si l’on confiait au cow-boy Marlboro une enquête sur les méfaits du tabac.\" - Claude MALHURET, 30 mars 2021", "20210330#par_349"],
   ["\"Vu la dette que nous laisserons à nos enfants, nous ne devrons plus être surpris que les bébés crient à la naissance.\" - Claude MALHURET, 16 juillet 2020", "20200716#par_312"],
   ["\"Je voudrais simplement savoir si notre présence dans cet hémicycle, nos délibérations ne gênent pas trop les travaux des entreprises qui interviennent actuellement un peu partout dans le Sénat.\" - Michel CHARASSE, 19 juin 2008",
-		"20080619#par_31"]
+		"20080619#par_31"],
+  ["\"Je propose que l’on ne décompte pas le temps d’orgasme de mon temps de parole&nbsp;! - Laurence ROSSIGNOL, 21 décembre 2018", "20181221#par_318"],
+  ["\Mais quelle est la grosseur de la poire, monsieur le ministre&nbsp;? Telle est la question&nbsp;! - Philippe MARINI, 8 décembre 2009", "20091208#par_470"]
  ];
-
+ 
+ //il faut être certain que les "guest stars" ne peuvent pas redevenir sénateurs
+ //pour ne pas avoir à détecter d'éventuels doublons dans les propositions
+ tab_gueststars_H = [
+	["Michel CHARASSE", "charasse_michel81015e"],
+	["Maurice COUVE DE MURVILLE", "couve_de_murville_maurice59529v"],
+	["Serge DASSAULT", "dassault_serge04055h"],
+	["Gaston DEFFERRE", "defferre_gaston000250"],
+	["Edgar FAURE", "faure_edgar000197"],
+	["Jean FRANÇOIS-PONCET", "francois_poncet_jean83033q"],
+	["Raymond MARCELLIN", "marcellin_raymond59715v"],
+	["Pierre MAUROY", "mauroy_pierre92037v"],
+	["François MITTERAND", "mitterrand_francois000379"],
+	["Gaston MONNERVILLE", "monnerville_gaston000677"],
+	["René MONORY", "monory_rene68036e"],
+	["Charles PASQUA", "pasqua_charles77053g"],
+	["Jacques PELLETIER", "pelletier_jacques66002k"],
+	["Alain PEYREFITTE", "peyrefitte_alain95054k"],
+	["Alain POHER", "poher_alain000211"],
+	["Christian PONCELET", "poncelet_christian77058m"],
+	["Michel PONIATOWSKI", "poniatowski_michel59556y"],
+	["Roger QUILLIOT", "quilliot_roger74041p"],
+	["Philippe RICHERT", "richert_philippe92005m"],
+	["Michel ROCARD", "rocard_michel95064m"]
+	];
+ tab_gueststars_F = [
+	["Nicole BRICQ", "bricq_nicole04053f"],
+	["Lucette MICHAUX-CHEVRY", "michaux_chevry_lucette95050f"],
+	["Hélène MISSOFFE", "missoffe_helene59552u"],
+	["Nelly OLIN", "olin_nelly95051g"],
+	["Monique PAPON", "papon_monique01054t"]
+ ]
+ const PROBA_GUEST = 0.05;
+ const G_OFFSET_H = 2000;
+ const G_OFFSET_F = 5000;
+ const G_LABEL_H = "(ancien sénateur)";
+ const G_LABEL_F = "(ancienne sénatrice)";
+ 
  
 // refactoring / helpers
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
@@ -177,7 +220,7 @@
 //////////////////////////
  
  function start()
- {
+ { 
 	//default : trombi_mode = TROMBI_NORMAL
 	var param = window.location.search.toLowerCase(); 
  	if (param == "?trombi=0")
@@ -266,6 +309,34 @@
  	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
  }
  
+/* function test_citations()
+ {
+	show("messen");
+	show("citation");
+	for (i=0; i<tab_citations.length; i++)
+	{
+		var citation = tab_citations[i];
+		elt("citation").style.top= rnd(300)+"px";
+		elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
+		console.log(citation[0]);
+		console.log(fullurl(citation[1]));
+	}
+ }*/
+ 
+/* function test_gueststars()
+ {
+	for (i=0; i<tab_gueststars_H.length; i++)
+	{
+		console.log(tab_gueststars_H[i][0]);
+		console.log(id2img(tab_gueststars_H[i][1]));
+	}
+	for (i=0; i<tab_gueststars_F.length; i++)
+	{
+		console.log(tab_gueststars_F[i][0]);
+		console.log(id2img(tab_gueststars_F[i][1]));
+	}
+ }*/
+ 
  function showtime()
  {
 	elt("temps").style.backgroundColor = NOFILT_COLOR;
@@ -280,12 +351,13 @@
 		}
 		if (tps<3)
 		{
-			elt("temps").style.backgroundColor = "red";
+			elt("temps").style.backgroundColor = "orange";
 		}
 		tps_timeout = setTimeout(showtime, 500);
 	}
 	else
 	{
+		elt("temps").style.backgroundColor = "red";
 		if (cur_game==1) { verif1(0); }
 		if (cur_game==2) { verif2(0); }
 	}
@@ -319,13 +391,13 @@
 			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
 			senateur.prenom = jsen[i]['etat_civil']['prenomuse']
 			senateur.sexe = jsen[i]['etat_civil']['qualite'];
-			if (senateur.sexe == "M.")
+			if (senateur.sexe == CIVIL_HOMME)
 			{
-				senateur.sexe = "H";
+				senateur.sexe = SEXE_HOMME;
 			}
 			else
 			{
-				senateur.sexe = "F";
+				senateur.sexe = SEXE_FEMME;
 			}
 			//le "nom_technique" est malheureusement inexploitable en raison d'un grand nombre d'anomalies
 			// (espaces et accents restants, matricule parfois présent et autres curiosités)
@@ -637,6 +709,26 @@
 	tab_bonrep[3] = num4;
 	tab_bonrep[4] = num5;
 	
+
+	if (Math.random()<PROBA_GUEST)
+	//rarement, on écrase une mauvaise réponse par un invité (guest star)
+	//note : la bonne réponse peut l'écraser à son tour
+	{
+		var g = rnd(5);
+		if (sexeref==SEXE_HOMME)
+		{
+			var guestnum = rnd(tab_gueststars_H.length); 
+			elt("nom"+(g+1)).innerHTML = tab_gueststars_H[guestnum][0];
+			tab_bonrep[g] = G_OFFSET_H + guestnum;
+		}
+		else //SEXE_FEMME
+		{
+			var guestnum = rnd(tab_gueststars_F.length); 
+			elt("nom"+(g+1)).innerHTML = tab_gueststars_F[guestnum][0];
+			tab_bonrep[g] = G_OFFSET_F + guestnum;		
+		}
+	}
+	
 	//écrasement avec la bonne réponse à un endroit (bonrep [1..5])) au hasard
 	var vnum = 0;
 	var prop_ok = true;
@@ -664,7 +756,7 @@
 	elt("img0").src = id2img(tab_senateurs[vnum].id);
 	var varnom = "nom" + bonrep;
 	elt(varnom).innerHTML = nomcomplet(vnum);
-	elt("nomok").innerHTML = elt(varnom).innerHTML;	
+	elt("nomok").innerHTML = elt(varnom).innerHTML;
 	show("nom1");
 	show("nom2");
 	show("nom3");
@@ -678,7 +770,6 @@
  function verif1(rep)
  {
 	clearTimeout(tps_timeout);
-	hide("temps");
 	hide("nom1");
 	hide("nom2");
 	hide("nom3");
@@ -690,8 +781,25 @@
 	{
 		delay = DELAY_LONG;
 		elt("nomno").innerHTML = UTF8_CROSS_MARK + NBSP + elt("nom"+rep).innerHTML;
+		var numsen = tab_bonrep[rep-1];
+		if (numsen < G_OFFSET_H) //et < G_OFFSET_F : cas général
+		{
+			elt("imgindic").src = id2img(tab_senateurs[numsen].id);
+		}
+		else
+		{
+			if (numsen >= G_OFFSET_F) //"guest star" femme
+			{
+				elt("imgindic").src = id2img(tab_gueststars_F[numsen-G_OFFSET_F][1]);
+				elt("nomno").innerHTML = elt("nomno").innerHTML + " " + G_LABEL_F;
+			}
+			else //G_OFFSET_H <= numsen <G_OFFSET_F : "guest star" homme
+			{
+				elt("imgindic").src = id2img(tab_gueststars_H[numsen-G_OFFSET_H][1]);
+				elt("nomno").innerHTML = elt("nomno").innerHTML + " " + G_LABEL_H;
+			}
+		}
 		show("nomno");
-		elt("imgindic").src = id2img(tab_senateurs[tab_bonrep[rep-1]].id);
 		show("imgindic");
 	}
 	else
@@ -739,7 +847,7 @@
 	elt("questbar").style.width = (100*scoremax/NB_MAX_PROP) + "%";
 	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
-	if (scoremax>=20)
+	if (scoremax>=NB_MAX_PROP)
 	{		
 		hide("game2");
 		show("menu");
@@ -800,6 +908,25 @@
 	tab_bonrep[3] = num4;
 	tab_bonrep[4] = num5;
 	
+	if (Math.random()<PROBA_GUEST)
+	//rarement, on écrase une mauvaise réponse par un invité (guest star)
+	//note : la bonne réponse peut l'écraser à son tour
+	{
+		var g = rnd(5);
+		if (sexeref==SEXE_HOMME)
+		{
+			var guestnum = rnd(tab_gueststars_H.length); 
+			elt("img"+(g+1)).src = id2img(tab_gueststars_H[guestnum][1]);
+			tab_bonrep[g] = G_OFFSET_H + guestnum;
+		}
+		else //SEXE_FEMME
+		{
+			var guestnum = rnd(tab_gueststars_F.length); 
+			elt("img"+(g+1)).src = id2img(tab_gueststars_F[guestnum][1]);
+			tab_bonrep[g] = G_OFFSET_F + guestnum;		
+		}
+	}
+	
 	//écrasement avec la bonne réponse à un endroit ("bonrep" [1..5]) au hasard
 	var vnum = 0;
 	var prop_ok = true;
@@ -841,7 +968,6 @@
  function verif2(rep)
  {
 	clearTimeout(tps_timeout);
-	hide("temps");
  	hide("img1");
 	hide("img2");
 	hide("img3");
@@ -854,7 +980,22 @@
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
 		show("imgno");
-		elt("nomindic").innerHTML = nomcomplet(tab_bonrep[rep-1]);
+		var numsen = tab_bonrep[rep-1];
+		if (numsen < G_OFFSET_H) //et < G_OFFSET_F : cas général
+		{
+			elt("nomindic").innerHTML = nomcomplet(numsen);
+		}
+		else
+		{
+			if (numsen >= G_OFFSET_F) //"guest star" femme
+			{
+				elt("nomindic").innerHTML = tab_gueststars_F[numsen-G_OFFSET_F][0] + " " + G_LABEL_F;
+			}
+			else //G_OFFSET_H <= numsen <G_OFFSET_F : "guest star" homme
+			{
+				elt("nomindic").innerHTML = tab_gueststars_H[numsen-G_OFFSET_H][0] + " " + G_LABEL_H;
+			}
+		}
 		show("nomindic");
 	}
 	if (rep==0)
@@ -939,7 +1080,7 @@
 
 	for (i=0; i<tab_senateurs.length; i++)
 	{
-		if (tab_senateurs[i].sexe == "H")
+		if (tab_senateurs[i].sexe == SEXE_HOMME)
 		{
 			if (trombi_h)
 			{
@@ -950,7 +1091,7 @@
 				hide(tab_senateurs[i].id);
 			}				
 		}
-		else //F
+		else //SEXE_FEMME
 		{
 			if (trombi_f)
 			{
