@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Sénateurs français : quiz et trombinoscope">
+<meta name="author" content="Guillaume JANDOT">
 <link rel="icon" type="image/png" href="trombico.png">
 <meta charset="UTF-8">
 <!--IDs
@@ -11,8 +14,6 @@
 * recherche de combinaisons spéciales (prénoms identiques...) ?
 * utilisation des images du trombi ?
 * gestion clavier ?
-
-// guest stars (anciens sénateurs)
 -->
 <title>Mes-Sen</title>
 <style>
@@ -81,7 +82,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.023"; //G. JANDOT 25/05/2021
+ const VERNUM = "1.024"; //G. JANDOT 31/05/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -133,6 +134,7 @@
  var nb_imgerr = 0;
  var trombi_h = true;
  var trombi_f = true;
+ var trombi_str = "";
  var cur_tip = "";
  var cur_game = 0;
  var tps_timeout;
@@ -192,7 +194,7 @@
 	["Roger QUILLIOT", "quilliot_roger74041p"],
 	["Philippe RICHERT", "richert_philippe92005m"],
 	["Michel ROCARD", "rocard_michel95064m"]
-	];
+ ];
  tab_gueststars_F = [
 	["Nicole BRICQ", "bricq_nicole04053f"],
 	["Lucette MICHAUX-CHEVRY", "michaux_chevry_lucette95050f"],
@@ -220,7 +222,7 @@
 //////////////////////////
  
  function start()
- { 
+ {
 	//default : trombi_mode = TROMBI_NORMAL
 	var param = window.location.search.toLowerCase(); 
  	if (param == "?trombi=0")
@@ -466,13 +468,20 @@
  function fill_trombi()
  {
 	var i = async_cpt;
-	elt("listsen").innerHTML += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
+	/*elt("listsen").innerHTML += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
+			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +" )\">"
+			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + nomcomplet(i) + "</div>"
+			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
+			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
+			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></div></A>";*/
+
+
+	trombi_str += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
 			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +" )\">"
 			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + nomcomplet(i) + "</div>"
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
 			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
 			+ "<div class=\"sendpt\">" + tab_senateurs[i].dpt + "</div></div></div></A>";
-
 	
 	async_cpt++;
 	elt("progress").value = async_cpt;
@@ -484,6 +493,8 @@
 	else
 	{
 		hide("loading");
+		elt("listsen").innerHTML = trombi_str;
+		trombi_str = "";
 		tab_groupes.sort();
 		var grp = elt("selgrp");
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
