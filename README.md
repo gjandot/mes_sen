@@ -1,5 +1,5 @@
 # mes_sen
-MES SEN : games and interactive trombinosocpe (face book) about current french senators.<BR>
+MES SEN : games and interactive trombinoscope (face book) about current french senators.<BR>
 http://gjandot.free.fr/mes_sen/<BR>
 Standalone "trombi" : http://gjandot.free.fr/mes_sen/?trombi (or ?trombi=1)<BR>
 Withouth "trombi" : http://gjandot.free.fr/mes_sen/?trombi=0<BR>
