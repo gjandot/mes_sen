@@ -10,7 +10,6 @@
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs durées (nombres de questions)
 * plusieurs difficultés (nombres de propositions)
-* gestion clavier ?
 -->
 <title>Mes-Sen</title>
 <style>
@@ -27,6 +26,8 @@
 			position:absolute; left:300px; padding:9px; text-align:center; vertical-align:middle; }
 .tooltip:before { content:""; position:absolute; left:-15px; top:15px; 
 			border-top:15px solid transparent; border-right:16px solid black; border-bottom:15px solid transparent;}
+.clavier { font-size:0.7em; color:#BBBBBB; float:right; }
+
 #score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; float:right; }
 #temps { font-size:2em; height:40px; width:40px; border-radius:50%; text-align:center;
 			border:3px solid white; color:black; background-color:blue; margin:9px; padding:3px; float:right; }
@@ -79,7 +80,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.026"; //G. JANDOT 12/06/2021
+ const VERNUM = "1.027"; //G. JANDOT 12/06/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -200,16 +201,11 @@
 	["Maurice COUVE DE MURVILLE", "couve_de_murville_maurice59529v"],
 	["Serge DASSAULT", "dassault_serge04055h"],
 	["Jacques DOMINATI", "dominati_jacques95026f"],
-	["Michel DURAFOUR", "durafour_michel57714l"],
 	["Claude ESTIER", "estier_claude86025d"],
 	["Jean-Claude ETIENNE", "etienne_jean_claude01026p"],
 	["Edgar FAURE", "faure_edgar000197"],
-	["Yves GUENA", "guena_yves89032q"],
 	["Jean FRANÇOIS-PONCET", "francois_poncet_jean83033q"],
 	["André LABARRÈRE", "labarrere_andre01032m"],
-	["Jean LECANUET", "lecanuet_jean000442"],
-	["Anicet LE PORS", "le_pors_anicet58652t"],
-	["Raymond MARCELLIN", "marcellin_raymond59715v"],
 	["Pierre MAUROY", "mauroy_pierre92037v"],
 	["François MITTERAND", "mitterrand_francois000379"],
 	["Gaston MONNERVILLE", "monnerville_gaston000677"],
@@ -217,14 +213,11 @@
 	["Charles PASQUA", "pasqua_charles77053g"],
 	["Jacques PELLETIER", "pelletier_jacques66002k"],
 	["Alain PEYREFITTE", "peyrefitte_alain95054k"],
-	["Edgard PISANI", "pisani_edgard57321w"],
 	["Alain POHER", "poher_alain000211"],
 	["Christian PONCELET", "poncelet_christian77058m"],
-	["Michel PONIATOWSKI", "poniatowski_michel59556y"],
 	["Jean PUECH", "puech_jean80035e"],
 	["Roger QUILLIOT", "quilliot_roger74041p"],
 	["Jack RALITE", "ralite_jack95060h"],
-	["Paul RIBEYRE", "ribeyre_paul000158"],
 	["Michel ROCARD", "rocard_michel95064m"],
 	["Roger ROMANI", "romani_roger59312e"],
 	["Maurice SCHUMANN", "schumann_maurice74044s"],
@@ -291,6 +284,8 @@
 	document.body.style.backgroundColor = "black";
 	show("loading");
 	elt("vernum").innerHTML = VERNUM;
+	
+	document.addEventListener('keyup', keyboard);
 
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
  }
@@ -645,10 +640,10 @@
 			game2(-1);
 			break;
 		case 3:
-			cur_game = 0;
+			cur_game = 3;
 			hide("messen");
 			show("trombi");
-			document.title = APPNAME + "- Trombi";
+			document.title = APPNAME + " - Trombi";
 			break;
 	}
  }
@@ -697,6 +692,81 @@
 	return res;
  }
  
+ function keyboard()
+ {
+	switch (event.key) {
+		case "1":
+		case "2":
+		case "3":
+		case "4":
+		case "5":
+			var n = Number.parseInt(event.key);
+			if (cur_game==0)
+			{
+				if (n<4)
+				{
+					launch(n);
+					return;
+				}
+			}
+			if (cur_game==1)
+			{
+				verif1(n);
+			}
+			if (cur_game==2)
+			{
+				verif2(n);
+			}
+			break;
+		case "Escape":
+			quit(); 
+			break;
+		case "Backspace":
+			if (cur_game==3)
+			{
+				if (document.activeElement!=elt("filtre"))
+				{
+					quit();
+				}
+			}
+			else
+			{
+				quit(); 
+			}
+			break;
+		case "H":
+		case "F":
+		case "h":
+		case "f":
+			if (cur_game==3) //trombi
+			{
+				if (document.activeElement!=elt("filtre"))
+				{
+					if (event.key.toLowerCase()=="h")
+					{
+						majtrombi(1);
+					}
+					else
+					{
+						majtrombi(2);
+					}
+				}
+			}
+			break;
+		case "0":
+			if (cur_game==3) //trombi
+			{
+				if (document.activeElement!=elt("filtre"))
+				{
+					reset_trombi();
+				}
+			}
+			break;
+		default:
+			return;
+	}
+ }
+ 
  function game1(val)
  {
 	if (cur_game==0) //abandon
@@ -722,20 +792,16 @@
 		scoremax = 0;
 		tab_pastprop.length = 0;
 	}
-	document.title = APPNAME + "- PHOTO " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	document.title = APPNAME + " - PHOTO " + (scoremax+1) + "/" + NB_MAX_QUEST;
 	elt("questnum").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_QUEST;
 	elt("questbar").style.width = (100*scoremax/NB_MAX_QUEST) + "%";
 	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
 	if (scoremax>=NB_MAX_QUEST)
 	{		
-		hide("game1");
-		show("menu");
-		rst_cittime();
-		hide("temps");
-		hide("quit");
-		document.title = "SCORE FINAL = " + score + "/" + scoremax; 
-		hide("questprog");
+		quit();
+		show("score");
+		document.title = APPNAME + " - SCORE FINAL = " + score + "/" + scoremax; 
 	    elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
@@ -1012,20 +1078,16 @@
 		scoremax = 0;
 		tab_pastprop.length = 0;
 	}
-	document.title = APPNAME + "- NOM " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	document.title = APPNAME + " - NOM " + (scoremax+1) + "/" + NB_MAX_QUEST;
 	elt("questnum").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_QUEST;
 	elt("questbar").style.width = (100*scoremax/NB_MAX_QUEST) + "%";
 	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
 	if (scoremax>=NB_MAX_QUEST)
 	{		
-		hide("game2");
-		show("menu");
-		rst_cittime();
-		hide("temps");
-		hide("quit");
-		document.title = "SCORE FINAL = " + score + "/" + scoremax;
-		hide("questprog");
+		quit();
+		show("score");
+		document.title = APPNAME + " - SCORE FINAL = " + score + "/" + scoremax;
 		elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
@@ -1335,21 +1397,24 @@
 <div id="c1" onclick="launch(1)" class="gamesel"
 		onmouseenter="cur_tip='tip1'; show('tip1')" onmouseleave="hide('tip1')" onmousemove="flotte(event)"
 		>"Quel nom&nbsp;?"</div>
-<div id="tip1" style="display:none" class="tooltip">Pour 1 photo, 5 noms.<BR>Il faut trouver le bon.</div>
+<div id="tip1" style="display:none" class="tooltip">Pour 1 photo, 5 noms.<BR>Il faut trouver le bon.
+	<span class="clavier"><BR>[1]</span></div>
 <div id="c2" onclick="launch(2)" class="gamesel"
 		onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
 		>"Quelle photo&nbsp;?"</div>
-<div id="tip2" style="display:none" class="tooltip">Pour 1 nom, 5 photos.<BR>Il faut trouver la bonne.</div>
+<div id="tip2" style="display:none" class="tooltip">Pour 1 nom, 5 photos.<BR>Il faut trouver la bonne.
+	<span class="clavier"><BR>[2]</span></div>
 <div id="c3" onclick="launch(3)" class="gamesel"
 			onmouseenter="cur_tip='tip3'; show('tip3')" onmouseleave="hide('tip3')" onmousemove="flotte(event)"
 		>Trombi</div>
-<div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif</div>
+<div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif
+	<span class="clavier"><BR>[3]</span></div>
 </div> <!--/menu-->
 
 <div id="citation" style="display:none"></div>
 
 <div id="game1" style="display:none">
-<img id="img0" title="Il faut cliquer sur le nom qui correspond à cette photo.">
+<img id="img0" title="Il faut cliquer sur le nom qui correspond à cette photo. (clavier : touches [1] à [5])">
 <div id="noms">
 <div id="nom1" class="nomsen" onclick="verif1(1)"></div>
 <div id="nom2" class="nomsen" onclick="verif1(2)"></div>
@@ -1362,7 +1427,7 @@
 </div> <!--/game1-->
 
 <div id="game2" style="display:none">
-<div id="nom0" title="Il faut cliquer sur la photo qui correspond à ce nom."></div>
+<div id="nom0" title="Il faut cliquer sur la photo qui correspond à ce nom.  (clavier : touches [1] à [5])"></div>
 <img id="img1" class="imgsen" onclick="verif2(1)">
 <img id="img2" class="imgsen" onclick="verif2(2)">
 <img id="img3" class="imgsen" onclick="verif2(3)">
@@ -1385,7 +1450,8 @@
 		title="Filtre textuel sur les noms et prénoms">
 <button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
 <id id="nbsen" title="Compteur de résultats"></id>
-<button id="reset" onclick="reset_trombi()" style="display:none" class="bouton reset" title="Effacer tous les filtres de recherche">Réinitialiser</button>
+<button id="reset" onclick="reset_trombi()" style="display:none" class="bouton reset"
+	title="Effacer tous les filtres de recherche (clavier: touche [0])">Réinitialiser</button>
 </div> <!--tools-->
 <div id="listsen"></div>
 <div id="vide" class="senelt" style="display:none" title="(personne)">Aucun résultat.</div>
