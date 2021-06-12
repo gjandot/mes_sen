@@ -10,9 +10,7 @@
 * mode "défi" : tous les sénateurs. Arrêt à la première erreur.
 * plusieurs durées (nombres de questions)
 * plusieurs difficultés (nombres de propositions)
-* utilisation des images du trombi ?
 * gestion clavier ?
-* TODO : mode prénom, vérif des noms créés avec nouveaux prénoms
 -->
 <title>Mes-Sen</title>
 <style>
@@ -81,21 +79,24 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.025"; //G. JANDOT 04/06/2021
+ const VERNUM = "1.026"; //G. JANDOT 12/06/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
  const TROMBI_ONLY = 1;
  var trombi_mode = TROMBI_NORMAL;
+ const CLASS_ACTIF = "chactif";
+ const CLASS_INACTIF = "chinactif"
 
+ const NB_PROP = 5;
  const MIN_NB_SEN = 200;
  const MAX_NB_SEN = 500;
  const DELAY_SHORT = 900; //ms
  const DELAY_LONG = 4000; //ms (=4s)
- const NB_MAX_PROP = 20;
- const SCORE_1 = 0.75 * NB_MAX_PROP;  //(15/20)
- const SCORE_2 = 0.9 * NB_MAX_PROP;   //(18/20)
- //SCORE_3 = NB_MAX_PROP
+ const NB_MAX_QUEST = 20;
+ const SCORE_1 = 0.75 * NB_MAX_QUEST;  //(15/20)
+ const SCORE_2 = 0.9 * NB_MAX_QUEST;   //(18/20)
+ //SCORE_3 = NB_MAX_QUEST
  const NO_GROUP = "-Tous les groupes-";
  const NO_COMM = "-Toutes les commissions-";
  const NO_FILTER = "-filtre-"; //lowercase
@@ -111,6 +112,7 @@
  var tab_senateurs = []; //objets "senateur"
 	// .nom
 	// .prenom
+	// .nomrech
 	// .id
 	// .sexe
 	// .groupe
@@ -141,8 +143,8 @@
  var cit_timeout;
  var numcit = -1;
  var cancit = false;
- const CIT_DELAY = 45000; //ms (=45s)
- const CIT_DUR = 15000; //ms (=15s)
+ const CIT_DELAY = 45000; //ms (=45s) 	- délai entre deux citations
+ const CIT_DUR = 15000; //ms (=15s)		- durée affichage d'une citation
  var tab_citations = [
   ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "20080529#par_268"],
   ["\"Écoutez-moi bien, car cela vaut son pesant de saccharine&nbsp;!\" - Pierre-Yves COLLOMBAT, 24/03/2009", "20090324#par_2965"],
@@ -175,18 +177,38 @@
   ["\"L’armagnac, le cognac et le calvados portent rarement le péché d’alcoolisme.\" - Aymeri de MONTESQUIOU, 9 novembre 2011", "20111109#par_1106"],
   ["\"Par fantaisie, Noël sera-t-il reporté à Pâques&nbsp;?\" - Jérôme BASCHER, 13 octobre 2020", "20201013#par_2449"],
   ["\"Pourquoi ne pas interdire de faire la vaisselle après dix-huit heures&nbsp;?\" - Michel BOUVARD, 14 décembre 2016", "20161214#par_470"],
-  ["\"La girafe, on est en train de la peigner&nbsp;!\" - Michel BOUVARD, 14 décembre 2016", "20161214#par_481"]  
+  ["\"La girafe, on est en train de la peigner&nbsp;!\" - Michel BOUVARD, 14 décembre 2016", "20161214#par_481"],
+  ["\"J'attends maintenant, ici et en direct, le porno du samedi soir... Cela finira par arriver&nbsp;! Je demande simplement qu'on ne tache pas mon fauteuil.\" - Michel CHARASSE, 15 mars 2005",
+		"20050315#par_41"],
+  ["\"On déshabille Paul pour habiller Pierre ou Jacques&nbsp;! À force d’être déshabillé, il va finir tout nu&nbsp;!\" - Cathy APOURCEAU-POLY, 30 novembre 2020", "20201130#par_1808"]
  ];
  
  //il faut être certain que les "guest stars" ne peuvent pas redevenir sénateurs
  //pour ne pas avoir à détecter d'éventuels doublons dans les propositions
  tab_gueststars_H = [
+	["François ABADIE", "abadie_francois83008p"],
+	["François AUTAIN", "autain_francois83012k"],
+	["Robert BADINTER", "badinter_robert95006b"],
+	["Christian BERGELIN", "bergelin_christian02007q"],
+	["Michel BERSON", "berson_michel11068s"],
+	["Christian BONNET", "bonnet_christian83016p"],
+	["Yvon BOURGES", "bourges_yvon80011v"],
+	["Christian BOURQUIN", "bourquin_christian11018g"],
+	["Louis de BROISSIA", "de_broissia_louis98048a"],
 	["Michel CHARASSE", "charasse_michel81015e"],
+	["Raymond COURRIÈRE", "courriere_raymond74050q"],
 	["Maurice COUVE DE MURVILLE", "couve_de_murville_maurice59529v"],
 	["Serge DASSAULT", "dassault_serge04055h"],
-	["Gaston DEFFERRE", "defferre_gaston000250"],
+	["Jacques DOMINATI", "dominati_jacques95026f"],
+	["Michel DURAFOUR", "durafour_michel57714l"],
+	["Claude ESTIER", "estier_claude86025d"],
+	["Jean-Claude ETIENNE", "etienne_jean_claude01026p"],
 	["Edgar FAURE", "faure_edgar000197"],
+	["Yves GUENA", "guena_yves89032q"],
 	["Jean FRANÇOIS-PONCET", "francois_poncet_jean83033q"],
+	["André LABARRÈRE", "labarrere_andre01032m"],
+	["Jean LECANUET", "lecanuet_jean000442"],
+	["Anicet LE PORS", "le_pors_anicet58652t"],
 	["Raymond MARCELLIN", "marcellin_raymond59715v"],
 	["Pierre MAUROY", "mauroy_pierre92037v"],
 	["François MITTERAND", "mitterrand_francois000379"],
@@ -195,27 +217,41 @@
 	["Charles PASQUA", "pasqua_charles77053g"],
 	["Jacques PELLETIER", "pelletier_jacques66002k"],
 	["Alain PEYREFITTE", "peyrefitte_alain95054k"],
+	["Edgard PISANI", "pisani_edgard57321w"],
 	["Alain POHER", "poher_alain000211"],
 	["Christian PONCELET", "poncelet_christian77058m"],
 	["Michel PONIATOWSKI", "poniatowski_michel59556y"],
+	["Jean PUECH", "puech_jean80035e"],
 	["Roger QUILLIOT", "quilliot_roger74041p"],
-	["Philippe RICHERT", "richert_philippe92005m"],
-	["Michel ROCARD", "rocard_michel95064m"]
-	];
+	["Jack RALITE", "ralite_jack95060h"],
+	["Paul RIBEYRE", "ribeyre_paul000158"],
+	["Michel ROCARD", "rocard_michel95064m"],
+	["Roger ROMANI", "romani_roger59312e"],
+	["Maurice SCHUMANN", "schumann_maurice74044s"],
+	["René TEULADE", "teulade_rene08046y"]
+ ];
+ 
  tab_gueststars_F = [
+	["Magdeleine ANGLADE", "anglade_magdeleine000465"],
 	["Nicole BRICQ", "bricq_nicole04053f"],
+	["Paulette BRISEPIERRE", "brisepierre_paulette89023p"],
+	["Dinah DERYCKE", "derycke_dinah97007l"],
+	["Colette GIUDICELLI", "giudicelli_colette08041t"],
+	["Nicole de HAUTECLOCQUE", "de_hauteclocque_nicole000310"],
 	["Lucette MICHAUX-CHEVRY", "michaux_chevry_lucette95050f"],
 	["Hélène MISSOFFE", "missoffe_helene59552u"],
 	["Nelly OLIN", "olin_nelly95051g"],
-	["Monique PAPON", "papon_monique01054t"]
- ]
- const PROBA_GUEST = 0.05;
+	["Monique PAPON", "papon_monique01054t"],
+	["Jeannette THOREZ VERMEERSCH", "thorez_vermeersch_jeannette56829s"]
+ ];
+ 
+ const PROBA_GUEST = 0.08; //tenir compte de l'éventuel écrasement par bonne réponse
  const G_OFFSET_H = 2000;
  const G_OFFSET_F = 5000;
  const ID_NONE = -1;
  const G_LABEL_H = "(ancien sénateur)";
  const G_LABEL_F = "(ancienne sénatrice)";
- const PROBA_PRENOMS = 0.07;
+ const PROBA_PRENOMS = 0.05;
 
  
 // refactoring / helpers
@@ -259,22 +295,42 @@
 	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
  }
  
- function sen2id(nom)
+ function strnorm(str)
+ //minuscules + retrait des accents
  {
-	var r = nom.toLowerCase();
-	r = r.replace(new RegExp(/ /g),"_");
-	r = r.replace(new RegExp(/-/g),"_");
+	var r = str.toLowerCase();
 	r = r.replace(new RegExp(/[àáâãäå]/g),"a");
-	r = r.replace(new RegExp(/æ/g),"ae");
 	r = r.replace(new RegExp(/ç/g),"c");
 	r = r.replace(new RegExp(/[èéêë]/g),"e");
 	r = r.replace(new RegExp(/[ìíîï]/g),"i");
 	r = r.replace(new RegExp(/ñ/g),"n");                
 	r = r.replace(new RegExp(/[òóôõö]/g),"o");
-	r = r.replace(new RegExp(/œ/g),"oe");
 	r = r.replace(new RegExp(/[ùúûü]/g),"u");
 	r = r.replace(new RegExp(/[ýÿ]/g),"y");
 	return r;
+ }
+ 
+ function sen2id(nom)
+ {
+	var r = strnorm(nom);
+	r = r.replace(new RegExp(/ /g),"_");
+	r = r.replace(new RegExp(/-/g),"_");
+	return r;
+ }
+ 
+ function is_sen(prenom, nom)
+ {
+	for (i=0; i<tab_senateurs.length; i++)
+	{
+		if (tab_senateurs[i].nom==nom)
+		{
+			if (tab_senateurs[i].prenom==prenom)
+			{
+				return true;
+			}
+		}
+	}	
+	return false;
  }
  
  function fullurl(sdate)
@@ -356,6 +412,7 @@
 	}
  }
  
+ 
  function showtime()
  {
 	elt("temps").style.backgroundColor = NOFILT_COLOR;
@@ -387,7 +444,7 @@
 	var jsonobj = JSON.parse(texte);
 	var jsen = jsonobj['senateurs'];
 	
-	if ((jsen.length < MIN_NB_SEN) || (jsen.length > MAX_NB_SEN))
+	if ( (jsen.length < MIN_NB_SEN) || (jsen.length > MAX_NB_SEN) )
 	{
 		hide("loading");
 		elt("error").innerHTML = "Nombre de sénateurs téléchargés (" + jsen.length + ") ";
@@ -407,7 +464,8 @@
 		{
 			var senateur = new Object();
 			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
-			senateur.prenom = jsen[i]['etat_civil']['prenomuse']
+			senateur.prenom = jsen[i]['etat_civil']['prenomuse'];
+			senateur.normnom = strnorm(senateur.prenom + " " + senateur.nom); //pour filtrage sans accent
 			senateur.sexe = jsen[i]['etat_civil']['qualite'];
 			if (senateur.sexe == CIVIL_HOMME)
 			{
@@ -497,7 +555,7 @@
 	elt("loadinfo").innerHTML = "Préparation du trombi (" +  async_cpt + "/" + tab_senateurs.length + ")";
 	if (async_cpt<tab_senateurs.length)
 	{
-		setTimeout(fill_trombi, 0); ////async to allow UI updates (animated gif + progressbar)
+		setTimeout(fill_trombi, 0); //async, to allow UI updates (animated gif + progressbar)
 	}
 	else
 	{
@@ -509,13 +567,13 @@
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
 		for (i=0; i< tab_groupes.length; i++)
 		{
-			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>"
+			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>";
 		}
 		var com = elt("selcom");
 		com.innerHTML = "<option value=\"\">" + NO_COMM + "</option>";
 		for (i=0; i< tab_commissions.length; i++)
 		{
-			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>"
+			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>";
 		}
 		reset_trombi(); //init trombi
 		if (trombi_mode==TROMBI_ONLY)
@@ -554,7 +612,7 @@
 	{
 		try
 		{
-			if (httpRequest.readyState===XMLHttpRequest.DONE && httpRequest.status===200)
+			if (( httpRequest.readyState===XMLHttpRequest.DONE) && (httpRequest.status===200) )
 			{
 				callback(httpRequest.responseText);
 			}
@@ -633,7 +691,7 @@
 	const UTF8_EMPTY_STAR = "&#x2606;";
 	if (score>=SCORE_1) 	{ stars++; }
 	if (score>=SCORE_2) 	{ stars++; }
-	if (score>=NB_MAX_PROP) { stars++; }
+	if (score>=NB_MAX_QUEST) { stars++; }
 	for (i=0; i<stars; i++)   { res += NBSP + UTF8_STAR; }
 	for (i=0; i<3-stars; i++) {	res += NBSP + UTF8_EMPTY_STAR; }
 	return res;
@@ -664,12 +722,12 @@
 		scoremax = 0;
 		tab_pastprop.length = 0;
 	}
-	document.title = APPNAME + "- PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("questnum").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("questbar").style.width = (100*scoremax/NB_MAX_PROP) + "%";
+	document.title = APPNAME + "- PHOTO " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	elt("questnum").innerHTML = "PHOTO " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	elt("questbar").style.width = (100*scoremax/NB_MAX_QUEST) + "%";
 	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
-	if (scoremax>=NB_MAX_PROP)
+	if (scoremax>=NB_MAX_QUEST)
 	{		
 		hide("game1");
 		show("menu");
@@ -697,7 +755,7 @@
 	{
 		//mode spécial "prénoms"
 		//on cherche 4 autres prénoms
-		while ((num2==num1) || (sexe!=sexeref) ||
+		while ( (num2==num1) || (sexe!=sexeref) ||
 				(tab_senateurs[num2].prenom==tab_senateurs[num1].prenom) )
 		{
 			num2 = rnd(n);
@@ -705,7 +763,7 @@
 		}
 		var num3 = rnd(n);
 		sexe = tab_senateurs[num3].sexe;
-		while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || 
+		while ( (num3==num2) || (num3==num1) || (sexe!=sexeref) || 
 				(tab_senateurs[num3].prenom==tab_senateurs[num2].prenom) ||
 				(tab_senateurs[num3].prenom==tab_senateurs[num1].prenom) )
 		{
@@ -714,7 +772,7 @@
 		}
 		var num4 = rnd(n);
 		sexe = tab_senateurs[num4].sexe;
-		while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) ||
+		while ( (num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) ||
 				(tab_senateurs[num4].prenom==tab_senateurs[num3].prenom) ||
 				(tab_senateurs[num4].prenom==tab_senateurs[num2].prenom) ||
 				(tab_senateurs[num4].prenom==tab_senateurs[num1].prenom) )
@@ -724,7 +782,7 @@
 		}
 		var num5 = rnd(n);
 		sexe = tab_senateurs[num5].sexe;
-		while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) ||
+		while ( (num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) ||
 				(tab_senateurs[num5].prenom==tab_senateurs[num4].prenom) ||
 				(tab_senateurs[num5].prenom==tab_senateurs[num3].prenom) ||
 				(tab_senateurs[num5].prenom==tab_senateurs[num2].prenom) ||
@@ -733,7 +791,6 @@
 			num5 = rnd(n);
 			sexe = tab_senateurs[num5].sexe;
 		}
-		//TODO : les 4 nouveaux sont-ils sénateurs ?
 		elt("nom1").innerHTML = nomcomplet(num1);
 		elt("nom2").innerHTML = tab_senateurs[num2].prenom + " " + tab_senateurs[num1].nom;
 		elt("nom3").innerHTML = tab_senateurs[num3].prenom + " " + tab_senateurs[num1].nom;
@@ -744,9 +801,27 @@
 		tab_bonrep[2] = ID_NONE;
 		tab_bonrep[3] = ID_NONE;
 		tab_bonrep[4] = ID_NONE;
+		//vérif des noms générés (homonymie possible)
+		if (is_sen(tab_senateurs[num2].prenom, tab_senateurs[num1].nom))
+		{
+			tab_bonrep[1] = num2;
+		}
+		if (is_sen(tab_senateurs[num3].prenom, tab_senateurs[num1].nom))
+		{
+			tab_bonrep[2] = num3;
+		}
+		if (is_sen(tab_senateurs[num4].prenom, tab_senateurs[num1].nom))
+		{
+			tab_bonrep[3] = num4;
+		}
+		if (is_sen(tab_senateurs[num5].prenom, tab_senateurs[num1].nom))
+		{
+			tab_bonrep[4] = num5;
+		}
+
 		elt("img0").src = id2img(tab_senateurs[num1].id);
 		elt("nomok").innerHTML = nomcomplet(num1);
-		bonrep = rnd(5)+1; //emplacement pour la bonne réponse
+		bonrep = rnd(NB_PROP)+1; //emplacement pour la bonne réponse
 		if (bonrep>1)
 		{
 			var tmp_nom = elt("nom"+bonrep).innerHTML;
@@ -758,28 +833,28 @@
 	}
 	else
 	{	// mode normal
-		while ((num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok))
+		while ( (num2==num1) || (sexe!=sexeref) || (!tab_senateurs[num2].imgok) )
 		{
 			num2 = rnd(n);
 			sexe = tab_senateurs[num2].sexe;
 		}
 		var num3 = rnd(n);
 		sexe = tab_senateurs[num3].sexe;
-		while ((num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok))
+		while ( (num3==num2) || (num3==num1) || (sexe!=sexeref) || (!tab_senateurs[num3].imgok) )
 		{
 			num3 = rnd(n);
 			sexe = tab_senateurs[num3].sexe;
 		}
 		var num4 = rnd(n);
 		sexe = tab_senateurs[num4].sexe;
-		while ((num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok))
+		while ( (num4==num3) || (num4==num2)|| (num4==num1) || (sexe!=sexeref) || (!tab_senateurs[num4].imgok) )
 		{
 			num4 = rnd(n);
 			sexe = tab_senateurs[num4].sexe;
 		}
 		var num5 = rnd(n);
 		sexe = tab_senateurs[num5].sexe;
-		while ((num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok))
+		while ( (num5==num4) || (num5==num3) || (num5==num2) || (num5==num1) || (sexe!=sexeref) || (!tab_senateurs[num5].imgok) )
 		{
 			num5 = rnd(n);
 			sexe = tab_senateurs[num5].sexe;
@@ -797,10 +872,10 @@
 		tab_bonrep[4] = num5;
 	
 		if (Math.random()<PROBA_GUEST)
-		//rarement, on écrase une mauvaise réponse par un invité (guest star)
+		//rarement, on écrase une mauvaise réponse par un invité ("guest star")
 		//note : la bonne réponse peut l'écraser à son tour
 		{
-			var g = rnd(5);
+			var g = rnd(NB_PROP);
 			if (sexeref==SEXE_HOMME)
 			{
 				var guestnum = rnd(tab_gueststars_H.length); 
@@ -822,7 +897,7 @@
 		{
 			vnum = rnd(n);
 			sexe = tab_senateurs[vnum].sexe;
-			while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok) )
+			while ( (vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok) )
 			{
 				vnum = rnd(n);
 				sexe = tab_senateurs[vnum].sexe;
@@ -838,7 +913,7 @@
 		} while (!prop_ok);
 		tab_pastprop.push(vnum);
 
-		bonrep = rnd(5)+1;
+		bonrep = rnd(NB_PROP)+1;
 		elt("img0").src = id2img(tab_senateurs[vnum].id);
 		elt("nom"+bonrep).innerHTML = nomcomplet(vnum);
 		elt("nomok").innerHTML = nomcomplet(vnum);
@@ -856,7 +931,6 @@
  
  function verif1(rep)
  {
-	console.log("rep=" + rep);
 	clearTimeout(tps_timeout);
 	hide("nom1");
 	hide("nom2");
@@ -938,12 +1012,12 @@
 		scoremax = 0;
 		tab_pastprop.length = 0;
 	}
-	document.title = APPNAME + "- NOM " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("questnum").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_PROP;
-	elt("questbar").style.width = (100*scoremax/NB_MAX_PROP) + "%";
+	document.title = APPNAME + "- NOM " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	elt("questnum").innerHTML = "NOM " + (scoremax+1) + "/" + NB_MAX_QUEST;
+	elt("questbar").style.width = (100*scoremax/NB_MAX_QUEST) + "%";
 	elt("score").innerHTML = "SCORE = " + score + "/" + scoremax + " - " + starscore(score);
 	
-	if (scoremax>=NB_MAX_PROP)
+	if (scoremax>=NB_MAX_QUEST)
 	{		
 		hide("game2");
 		show("menu");
@@ -1008,7 +1082,7 @@
 	//rarement, on écrase une mauvaise réponse par un invité (guest star)
 	//note : la bonne réponse peut l'écraser à son tour
 	{
-		var g = rnd(5);
+		var g = rnd(NB_PROP);
 		if (sexeref==SEXE_HOMME)
 		{
 			var guestnum = rnd(tab_gueststars_H.length); 
@@ -1030,7 +1104,7 @@
 	{
 		vnum = rnd(n);
 		sexe = tab_senateurs[vnum].sexe;
-		while ((vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok))
+		while ( (vnum==num5) || (vnum==num4) || (vnum==num3) || (vnum==num2) || (vnum==num1) || (sexe!=sexeref) || (!tab_senateurs[vnum].imgok) )
 		{
 			vnum = rnd(n);
 			sexe = tab_senateurs[vnum].sexe;
@@ -1046,7 +1120,7 @@
 	} while (!prop_ok);
 	tab_pastprop.push(vnum);
 	
-	bonrep = rnd(5)+1;
+	bonrep = rnd(NB_PROP)+1;
 	elt("nom0").innerHTML= nomcomplet(vnum);
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(tab_senateurs[vnum].id);
@@ -1071,7 +1145,7 @@
 	hide("img5");
 	show("imgok");
 	var delay = DELAY_SHORT;
-	if ((rep!==bonrep) && (rep>0)) //rep==0 : time's out
+	if ( (rep!==bonrep) && (rep>0) ) //rep==0 : time's out
 	{
 		delay = DELAY_LONG;
 		elt("imgno").src = elt("img"+rep).src;
@@ -1121,7 +1195,7 @@
 
  function majtrombi(action)
  {
-	var filtre = elt("filtre").value.toLowerCase().trim();
+	var filtre = strnorm(elt("filtre").value.trim());
 	var filgrp = elt("selgrp").options[elt("selgrp").selectedIndex].text;
 	var filcom = elt("selcom").options[elt("selcom").selectedIndex].text;
 	if (action==1)//hommes
@@ -1152,21 +1226,21 @@
 	
 	if (trombi_h)
 	{
-		elt("hommes").className = "chactif";
+		elt("hommes").className = CLASS_ACTIF;
 	}
 	else
 	{
-		elt("hommes").className = "chinactif";
+		elt("hommes").className = CLASS_INACTIF;
 	}
 	if (trombi_f)
 	{
-		elt("femmes").className = "chactif";
+		elt("femmes").className = CLASS_ACTIF;
 	}
 	else
 	{
-		elt("femmes").className = "chinactif";
+		elt("femmes").className = CLASS_INACTIF;
 	}
-	if ( (filtre!= NO_FILTER && filtre!="")
+	if ( ((filtre!= NO_FILTER) && (filtre!=""))
 			|| (filgrp != NO_GROUP)
 			|| (filcom != NO_COMM)
 		)
@@ -1199,9 +1273,9 @@
 			}
 		}
 		
-		if (filtre!= NO_FILTER && filtre!="")
+		if ( (filtre!=NO_FILTER) && (filtre!="") )
 		{
-			if ((!(nomcomplet(i).toLowerCase()).includes(filtre)))
+			if (!(tab_senateurs[i].normnom.includes(filtre)))
 			{
 				hide(tab_senateurs[i].id);
 			}
