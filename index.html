@@ -80,7 +80,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.027"; //G. JANDOT 12/06/2021
+ const VERNUM = "1.028"; //G. JANDOT 04/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -138,6 +138,7 @@
  var trombi_h = true;
  var trombi_f = true;
  var trombi_str = "";
+ var kb_ok = true; //keyboard answers enabled
  var cur_tip = "";
  var cur_game = 0;
  var tps_timeout;
@@ -215,7 +216,6 @@
 	["Alain PEYREFITTE", "peyrefitte_alain95054k"],
 	["Alain POHER", "poher_alain000211"],
 	["Christian PONCELET", "poncelet_christian77058m"],
-	["Jean PUECH", "puech_jean80035e"],
 	["Roger QUILLIOT", "quilliot_roger74041p"],
 	["Jack RALITE", "ralite_jack95060h"],
 	["Michel ROCARD", "rocard_michel95064m"],
@@ -711,11 +711,19 @@
 			}
 			if (cur_game==1)
 			{
-				verif1(n);
+				if (kb_ok)
+				{
+					kb_ok = false;
+					verif1(n);
+				}
 			}
 			if (cur_game==2)
 			{
-				verif2(n);
+				if (kb_ok)
+				{
+					kb_ok = false;
+					verif2(n);
+				}
 			}
 			break;
 		case "Escape":
@@ -938,7 +946,7 @@
 		tab_bonrep[4] = num5;
 	
 		if (Math.random()<PROBA_GUEST)
-		//rarement, on écrase une mauvaise réponse par un invité ("guest star")
+		//rarement, on écrase une proposition de réponse par un invité ("guest star")
 		//note : la bonne réponse peut l'écraser à son tour
 		{
 			var g = rnd(NB_PROP);
@@ -993,6 +1001,7 @@
 	show("temps");
 	hordeb = Date.now();
 	showtime();
+	kb_ok= true;
  }
  
  function verif1(rep)
@@ -1195,6 +1204,7 @@
 	show("temps");
 	hordeb = Date.now();
 	showtime();
+	kb_ok = true;
  }
  
  function verif2(rep)
