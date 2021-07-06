@@ -80,7 +80,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.028"; //G. JANDOT 04/07/2021
+ const VERNUM = "1.029"; //G. JANDOT 06/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -1347,7 +1347,8 @@
 		
 		if ( (filtre!=NO_FILTER) && (filtre!="") )
 		{
-			if (!(tab_senateurs[i].normnom.includes(filtre)))
+			//if (!(tab_senateurs[i].normnom.includes(filtre))) //IE doesn't know "String.prototype.includes()"
+			if (tab_senateurs[i].normnom.indexOf(filtre)==-1)
 			{
 				hide(tab_senateurs[i].id);
 			}
