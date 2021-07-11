@@ -80,7 +80,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.029"; //G. JANDOT 06/07/2021
+ const VERNUM = "1.030"; //G. JANDOT 11/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -138,6 +138,7 @@
  var trombi_h = true;
  var trombi_f = true;
  var trombi_str = "";
+ var trombi_corr = 0;
  var kb_ok = true; //keyboard answers enabled
  var cur_tip = "";
  var cur_game = 0;
@@ -539,7 +540,7 @@
 	var i = async_cpt;
 	
 	trombi_str += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
-			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +" )\">"
+			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +")\">"
 			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + nomcomplet(i) + "</div>"
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
 			+ "<div class=\"sencom\">" + tab_senateurs[i].comm + "</div>"
@@ -598,6 +599,27 @@
 		hide("c2");
 	} 
  }
+ 
+ function corr_trombi()
+ //remplacement des images non trouvées par une image générique
+ {
+	var str = elt("listsen").innerHTML;
+	for (i=0; i<tab_senateurs.length; i++)
+	{
+		if (!tab_senateurs[i].imgok)
+		{
+			position = str.indexOf(id2img(tab_senateurs[i].id));
+			if (position>-1) //le remplacement n'a pas déjà été fait
+			{
+				longueur = id2img(tab_senateurs[i].id).length;
+				str = str.substring(0,position) + "nopict.jpg" + str.substring(position+longueur)
+				trombi_corr++;
+			}
+		}
+	}
+	elt("listsen").innerHTML = str;
+ }
+ 
 
  function ajax(url,callback)
  {
@@ -642,6 +664,10 @@
 		case 3:
 			cur_game = 3;
 			hide("messen");
+			if (trombi_corr!=nb_imgerr)
+			{
+				corr_trombi();
+			}
 			show("trombi");
 			document.title = APPNAME + " - Trombi";
 			break;
