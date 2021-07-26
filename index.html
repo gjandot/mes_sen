@@ -25,8 +25,12 @@
 .tooltip { font-size:1em; color:white; background-color:black; height:45px; width:200px;
 			position:absolute; left:300px; padding:9px; text-align:center; vertical-align:middle; }
 .tooltip:before { content:""; position:absolute; left:-15px; top:15px; 
-			border-top:15px solid transparent; border-right:16px solid black; border-bottom:15px solid transparent;}
+			border-top:15px solid transparent; border-right:16px solid black; border-bottom:15px solid transparent; }
 .clavier { font-size:0.7em; color:#BBBBBB; float:right; }
+
+#chx_masque { float:right; margin-top:-70px; }
+#maskon {  transform:scale(1.5); display:inline-block; height:50px; }
+.niv_gris { filter:grayscale(1); }
 
 #score { border:1px solid white; color:lightblue; background-color:blue; margin:9px; padding:3px; float:right; }
 #temps { font-size:2em; height:40px; width:40px; border-radius:50%; text-align:center;
@@ -74,20 +78,21 @@
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
+<script type="text/javascript" src="datamask.js"></script> <!--//tab_datamask[["m", s, x, y]]-->
 <script type="text/javascript">
 //
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.030"; //G. JANDOT 11/07/2021
+ const VERNUM = "1.031"; //G. JANDOT 24/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
  const TROMBI_ONLY = 1;
  var trombi_mode = TROMBI_NORMAL;
  const CLASS_ACTIF = "chactif";
- const CLASS_INACTIF = "chinactif"
+ const CLASS_INACTIF = "chinactif";
 
  const NB_PROP = 5;
  const MIN_NB_SEN = 200;
@@ -109,10 +114,15 @@
  const CIVIL_HOMME = "M.";
  const SEXE_HOMME = "H";
  const SEXE_FEMME = "F";
+ var DEF_M_SCALE = 1.0;
+ var DEF_M_OFFX = 45;
+ var DEF_M_OFFY = 100;
+ const MASK_H_AJUST = 167;
 
  var tab_senateurs = []; //objets "senateur"
 	// .nom
 	// .prenom
+	// .mat
 	// .nomrech
 	// .id
 	// .sexe
@@ -120,6 +130,10 @@
 	// .dpt
 	// .comm
 	// .imgok
+	// .m_scale (mask scale)
+	// .m_offx (mask x offset)
+	// .m_offy (mask y offset)
+	
 
  var tab_groupes = [];
  var tab_commissions = [];
@@ -141,14 +155,16 @@
  var trombi_corr = 0;
  var kb_ok = true; //keyboard answers enabled
  var cur_tip = "";
+ var mask_on = false;
  var cur_game = 0;
  var tps_timeout;
- var cit_timeout;
+var cit_timeout;
  var numcit = -1;
  var cancit = false;
  const CIT_DELAY = 45000; //ms (=45s) 	- délai entre deux citations
  const CIT_DUR = 15000; //ms (=15s)		- durée affichage d'une citation
- var tab_citations = [
+ 
+ const tab_citations = [
   ["\"Pour l'instant, c'est encore moi qui préside&nbsp;!\" - Christian PONCELET, 29/05/2008", "20080529#par_268"],
   ["\"Écoutez-moi bien, car cela vaut son pesant de saccharine&nbsp;!\" - Pierre-Yves COLLOMBAT, 24/03/2009", "20090324#par_2965"],
   ["\"Je crains aussi que l’immobilisme n’avance désormais en Europe et que rien ne puisse l’arrêter.\" - Jean BIZET, 11/04/2019", "20190411#par_1584"],
@@ -185,58 +201,50 @@
 		"20050315#par_41"],
   ["\"On déshabille Paul pour habiller Pierre ou Jacques&nbsp;! À force d’être déshabillé, il va finir tout nu&nbsp;!\" - Cathy APOURCEAU-POLY, 30 novembre 2020", "20201130#par_1808"]
  ];
- 
+
  //il faut être certain que les "guest stars" ne peuvent pas redevenir sénateurs
  //pour ne pas avoir à détecter d'éventuels doublons dans les propositions
- tab_gueststars_H = [
-	["François ABADIE", "abadie_francois83008p"],
-	["François AUTAIN", "autain_francois83012k"],
-	["Robert BADINTER", "badinter_robert95006b"],
-	["Christian BERGELIN", "bergelin_christian02007q"],
-	["Michel BERSON", "berson_michel11068s"],
-	["Christian BONNET", "bonnet_christian83016p"],
-	["Yvon BOURGES", "bourges_yvon80011v"],
-	["Christian BOURQUIN", "bourquin_christian11018g"],
-	["Louis de BROISSIA", "de_broissia_louis98048a"],
-	["Michel CHARASSE", "charasse_michel81015e"],
-	["Raymond COURRIÈRE", "courriere_raymond74050q"],
-	["Maurice COUVE DE MURVILLE", "couve_de_murville_maurice59529v"],
-	["Serge DASSAULT", "dassault_serge04055h"],
-	["Jacques DOMINATI", "dominati_jacques95026f"],
-	["Claude ESTIER", "estier_claude86025d"],
-	["Jean-Claude ETIENNE", "etienne_jean_claude01026p"],
-	["Edgar FAURE", "faure_edgar000197"],
-	["Jean FRANÇOIS-PONCET", "francois_poncet_jean83033q"],
-	["André LABARRÈRE", "labarrere_andre01032m"],
-	["Pierre MAUROY", "mauroy_pierre92037v"],
-	["François MITTERAND", "mitterrand_francois000379"],
-	["Gaston MONNERVILLE", "monnerville_gaston000677"],
-	["René MONORY", "monory_rene68036e"],
-	["Charles PASQUA", "pasqua_charles77053g"],
-	["Jacques PELLETIER", "pelletier_jacques66002k"],
-	["Alain PEYREFITTE", "peyrefitte_alain95054k"],
-	["Alain POHER", "poher_alain000211"],
-	["Christian PONCELET", "poncelet_christian77058m"],
-	["Roger QUILLIOT", "quilliot_roger74041p"],
-	["Jack RALITE", "ralite_jack95060h"],
-	["Michel ROCARD", "rocard_michel95064m"],
-	["Roger ROMANI", "romani_roger59312e"],
-	["Maurice SCHUMANN", "schumann_maurice74044s"],
-	["René TEULADE", "teulade_rene08046y"]
+ const tab_gueststars_H = [ 
+	["François ABADIE","abadie_francois83008p",0.73,43,101],
+	["Robert BADINTER","badinter_robert95006b",0.73,46,90],
+	["Christian BONNET","bonnet_christian83016p",0.76,49,96],
+	["Yvon BOURGES","bourges_yvon80011v",0.67,48,87],
+	["Michel CHARASSE","charasse_michel81015e",0.85,44,94],
+	["Raymond COURRIÈRE","courriere_raymond74050q",0.7,48,96],
+	["Maurice COUVE DE MURVILLE","couve_de_murville_maurice59529v",0.88,44,130],
+	["Serge DASSAULT","dassault_serge04055h",0.67,46,78],
+	["Edgar FAURE","faure_edgar000197",0.85,39,109],
+	["Jean FRANÇOIS-PONCET","francois_poncet_jean83033q",0.7,45,81],
+	["André LABARRÈRE","labarrere_andre01032m",0.67,50,101],
+	["Pierre MAUROY","mauroy_pierre92037v",0.7,47,86],
+	["François MITTERAND","mitterrand_francois000379",0.94,56,124],
+	["Gaston MONNERVILLE","monnerville_gaston000677",0.91,42,115],
+	["René MONORY","monory_rene68036e",0.67,47,86],
+	["Charles PASQUA","pasqua_charles77053g",0.67,46,70],
+	["Jacques PELLETIER","pelletier_jacques66002k",0.64,51,93],
+	["Alain PEYREFITTE","peyrefitte_alain95054k",0.73,35,101],
+	["Alain POHER","poher_alain000211",0.85,44,116],
+	["Christian PONCELET","poncelet_christian77058m",0.7,52,94],
+	["Roger QUILLIOT","quilliot_roger74041p",0.94,65,122],
+	["Jack RALITE","ralite_jack95060h",0.73,47,115],
+	["Michel ROCARD","rocard_michel95064m",0.7,48,114],
+	["Roger ROMANI","romani_roger59312e",0.88,47,98],
+	["Maurice SCHUMANN","schumann_maurice74044s",0.88,36,102],
+	["René TEULADE","teulade_rene08046y",0.79,45,91]
  ];
- 
- tab_gueststars_F = [
-	["Magdeleine ANGLADE", "anglade_magdeleine000465"],
-	["Nicole BRICQ", "bricq_nicole04053f"],
-	["Paulette BRISEPIERRE", "brisepierre_paulette89023p"],
-	["Dinah DERYCKE", "derycke_dinah97007l"],
-	["Colette GIUDICELLI", "giudicelli_colette08041t"],
-	["Nicole de HAUTECLOCQUE", "de_hauteclocque_nicole000310"],
-	["Lucette MICHAUX-CHEVRY", "michaux_chevry_lucette95050f"],
-	["Hélène MISSOFFE", "missoffe_helene59552u"],
-	["Nelly OLIN", "olin_nelly95051g"],
-	["Monique PAPON", "papon_monique01054t"],
-	["Jeannette THOREZ VERMEERSCH", "thorez_vermeersch_jeannette56829s"]
+
+ const tab_gueststars_F = [
+	["Magdeleine ANGLADE","anglade_magdeleine000465",0.91,52,128],
+	["Nicole BRICQ","bricq_nicole04053f",0.88,52,92],
+	["Paulette BRISEPIERRE","brisepierre_paulette89023p",0.61,48,88],
+	["Dinah DERYCKE","derycke_dinah97007l",0.64,55,96],
+	["Colette GIUDICELLI","giudicelli_colette08041t",0.73,55,87],
+	["Nicole de HAUTECLOCQUE","de_hauteclocque_nicole000310",0.82,43,125],
+	["Lucette MICHAUX-CHEVRY","michaux_chevry_lucette95050f",0.79,51,116],
+	["Hélène MISSOFFE","missoffe_helene59552u",0.79,42,123],
+	["Nelly OLIN","olin_nelly95051g",0.58,41,96],
+	["Monique PAPON","papon_monique01054t",0.76,48,91],
+	["Jeannette THOREZ VERMEERSCH","thorez_vermeersch_jeannette56829s",0.82,54,130]
  ];
  
  const PROBA_GUEST = 0.08; //tenir compte de l'éventuel écrasement par bonne réponse
@@ -285,6 +293,7 @@
 	document.body.style.backgroundColor = "black";
 	show("loading");
 	elt("vernum").innerHTML = VERNUM;
+	elt("maskon").checked = mask_on; //(false)
 	
 	document.addEventListener('keyup', keyboard);
 
@@ -328,6 +337,23 @@
 	}	
 	return false;
  }
+ 
+  function find_sen(mat)
+ {
+	var res = -1;
+	{
+		for (i=0; i<tab_senateurs.length; i++)
+		{
+			if (tab_senateurs[i].mat==mat)
+			{
+				res = i;
+				break;
+			}
+		}
+	}
+	return res;
+ }
+
  
  function fullurl(sdate)
  //transforme AAAAMMJJ#refname en
@@ -474,7 +500,8 @@
 			//le "nom_technique" est malheureusement inexploitable en raison d'un grand nombre d'anomalies
 			// (espaces et accents restants, matricule parfois présent et autres curiosités)
 			//=>il faut le recalculer
-			senateur.id = senateur.nom + "_" + senateur.prenom + jsen[i]['matricule'];
+			senateur.mat = jsen[i]['matricule'];
+			senateur.id = senateur.nom + "_" + senateur.prenom + senateur.mat;
 			senateur.id = sen2id(senateur.id);
 			try 
 			{
@@ -509,6 +536,26 @@
 				{
 					tab_commissions.push(senateur.comm);
 				}
+			}
+		}
+		
+		//parsing mask data
+		for (i=0; i<tab_datamask.length; i++)
+		//tab_datamask[[["mat", scale, offset_x, offset_y]]
+		{
+			idx = find_sen(tab_datamask[i][0]); //matricule
+			if (idx > -1)
+			{
+				senateur = tab_senateurs[idx]; //
+				senateur.m_scale = tab_datamask[i][1]; //scale
+				senateur.m_offx = tab_datamask[i][2]; //offset_x
+				senateur.m_offy = tab_datamask[i][3]; //offset_y
+			}
+			else
+			{
+				senateur.m_scale = DEF_M_SCALE;
+				senateur.m_offx = DEF_M_OFFX;
+				senateur.m_offy = DEF_M_OFFY;
 			}
 		}
 		
@@ -671,6 +718,28 @@
 			show("trombi");
 			document.title = APPNAME + " - Trombi";
 			break;
+	}
+ }
+ 
+ function change_masque(modif)
+ {
+	//si clic sur image => il faut changer l'état de la case à cocher
+	if (modif)
+	{
+		elt("maskon").checked = !elt("maskon").checked;
+	}
+	
+	if (elt('maskon').checked)
+	{
+		mask_on = true;
+		elt("masque").className = "";
+		elt("masque").title = "Masque activé";
+	}
+	else
+	{
+		mask_on = false;
+		elt("masque").className = "niv_gris";
+		elt("masque").title = "Masque désactivé";
 	}
  }
  
@@ -920,6 +989,15 @@
 		}
 
 		elt("img0").src = id2img(tab_senateurs[num1].id);
+		if (mask_on)
+		{
+			elt("mask0").style.transform = `scale(${tab_senateurs[num1].m_scale})`;
+			//elt("mask0").style.position = "absolute";
+			elt("mask0").style.left = tab_senateurs[num1].m_offx + "px";
+			elt("mask0").style.top = (tab_senateurs[num1].m_offy+45) + "px";
+			show("mask0");
+		}
+		
 		elt("nomok").innerHTML = nomcomplet(num1);
 		bonrep = rnd(NB_PROP)+1; //emplacement pour la bonne réponse
 		if (bonrep>1)
@@ -1015,6 +1093,13 @@
 
 		bonrep = rnd(NB_PROP)+1;
 		elt("img0").src = id2img(tab_senateurs[vnum].id);
+		if (mask_on)
+		{
+			elt("mask0").style.transform = `scale(${tab_senateurs[vnum].m_scale})`;
+			elt("mask0").style.left = tab_senateurs[vnum].m_offx + "px";
+			elt("mask0").style.top = (tab_senateurs[vnum].m_offy+45) + "px";
+			show("mask0");
+		}
 		elt("nom"+bonrep).innerHTML = nomcomplet(vnum);
 		elt("nomok").innerHTML = nomcomplet(vnum);
 	} // mode normal
@@ -1038,13 +1123,14 @@
 	hide("nom3");
 	hide("nom4");
 	hide("nom5");
+	hide("mask0");
 	var delay = DELAY_SHORT;
 	if ((rep!==bonrep) && (rep>0)) //rep==0 : time's out
 	{
 		delay = DELAY_LONG;
 		elt("nomno").innerHTML = UTF8_CROSS_MARK + NBSP + elt("nom"+rep).innerHTML;
 		var numsen = tab_bonrep[rep-1];
-		if (numsen==ID_NONE)//mode prénom, mauvais prénom
+		if (numsen==ID_NONE) //mode prénom, mauvais prénom
 		{
 			show("nomno");
 			//pas d'image
@@ -1169,6 +1255,43 @@
 	elt("img3").src = id2img(tab_senateurs[num3].id);
 	elt("img4").src = id2img(tab_senateurs[num4].id);
 	elt("img5").src = id2img(tab_senateurs[num5].id);
+	if (mask_on)
+	{
+		elt("mask1").style.transform = `scale(${tab_senateurs[num1].m_scale})`;
+		//elt("mask1").style.position = "absolute";
+		elt("mask1").style.left = (tab_senateurs[num1].m_offx - 3) + "px";
+		elt("mask1").style.top = (tab_senateurs[num1].m_offy + 115) + "px";
+		show("mask1");
+		elt("mask2").style.transform = `scale(${tab_senateurs[num2].m_scale})`;
+		//elt("mask2").style.position = "absolute";
+		elt("mask2").style.left = (tab_senateurs[num2].m_offx + MASK_H_AJUST -3 ) + "px";
+		elt("mask2").style.top = (tab_senateurs[num2].m_offy + 115) + "px";
+		show("mask2");
+		elt("mask3").style.transform = `scale(${tab_senateurs[num3].m_scale})`;
+		//elt("mask3").style.position = "absolute";
+		elt("mask3").style.left = (tab_senateurs[num3].m_offx + 2*MASK_H_AJUST - 3) + "px";
+		elt("mask3").style.top = (tab_senateurs[num3].m_offy + 115) + "px";
+		show("mask3");
+		elt("mask4").style.transform = `scale(${tab_senateurs[num4].m_scale})`;
+		//elt("mask4").style.position = "absolute";
+		elt("mask4").style.left = (tab_senateurs[num4].m_offx + 3*MASK_H_AJUST- 3) + "px";
+		elt("mask4").style.top = (tab_senateurs[num4].m_offy + 115) + "px";
+		show("mask4");
+		elt("mask5").style.transform = `scale(${tab_senateurs[num5].m_scale})`;
+		//elt("mask5").style.position = "absolute";
+		elt("mask5").style.left = (tab_senateurs[num5].m_offx + 4*MASK_H_AJUST - 3) + "px";
+		elt("mask5").style.top = (tab_senateurs[num5].m_offy + 115) + "px";
+		show("mask5");
+	}
+	else
+	{
+		hide("mask1");
+		hide("mask2");
+		hide("mask3");
+		hide("mask4");
+		hide("mask5");
+	}
+
 	tab_bonrep[0] = num1;
 	tab_bonrep[1] = num2;
 	tab_bonrep[2] = num3;
@@ -1184,12 +1307,18 @@
 		{
 			var guestnum = rnd(tab_gueststars_H.length); 
 			elt("img"+(g+1)).src = id2img(tab_gueststars_H[guestnum][1]);
+			elt("mask"+(g+1)).style.transform = `scale(${tab_gueststars_H[guestnum][2]})`;
+			elt("mask"+(g+1)).style.left = (tab_gueststars_H[guestnum][3] + (g)*MASK_H_AJUST - 3) + "px";
+			elt("mask"+(g+1)).style.top = (tab_gueststars_H[guestnum][4] + 115) + "px";			
 			tab_bonrep[g] = G_OFFSET_H + guestnum;
 		}
 		else //SEXE_FEMME
 		{
 			var guestnum = rnd(tab_gueststars_F.length); 
 			elt("img"+(g+1)).src = id2img(tab_gueststars_F[guestnum][1]);
+			elt("mask"+(g+1)).style.transform = `scale(${tab_gueststars_F[guestnum][2]})`;
+			elt("mask"+(g+1)).style.left = (tab_gueststars_F[guestnum][3] + (g)*MASK_H_AJUST - 3) + "px";
+			elt("mask"+(g+1)).style.top = (tab_gueststars_F[guestnum][4] + 115) + "px";			
 			tab_bonrep[g] = G_OFFSET_F + guestnum;		
 		}
 	}
@@ -1221,6 +1350,13 @@
 	elt("nom0").innerHTML= nomcomplet(vnum);
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(tab_senateurs[vnum].id);
+	if (mask_on)
+	{
+		var varmask = "mask" + bonrep;
+		elt(varmask).style.transform = `scale(${tab_senateurs[vnum].m_scale})`;
+		elt(varmask).style.left = (tab_senateurs[vnum].m_offx + (bonrep-1)*MASK_H_AJUST - 3) + "px";
+		elt(varmask).style.top = (tab_senateurs[vnum].m_offy + 115) + "px";
+	}
 	elt("imgok").src = elt(varimg).src;
 	show("img1");
 	show("img2");
@@ -1241,6 +1377,11 @@
 	hide("img3");
 	hide("img4");
 	hide("img5");
+	hide("mask1");
+	hide("mask2");
+	hide("mask3");
+	hide("mask4");
+	hide("mask5");
 	show("imgok");
 	var delay = DELAY_SHORT;
 	if ( (rep!==bonrep) && (rep>0) ) //rep==0 : time's out
@@ -1446,12 +1587,19 @@
 		>Trombi</div>
 <div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif
 	<span class="clavier"><BR>[3]</span></div>
+	
+<div id="chx_masque"><input id="maskon" type="checkbox" onchange="change_masque(false)">
+	<img id="masque" width="75px" src="masque.png" ALT="masque" title="Masque désactivé"
+		class="niv_gris" onclick="change_masque(true)">
+</div> <!--chx_masque-->
+	
 </div> <!--/menu-->
 
 <div id="citation" style="display:none"></div>
 
 <div id="game1" style="display:none">
 <img id="img0" title="Il faut cliquer sur le nom qui correspond à cette photo. (clavier : touches [1] à [5])">
+<img id="mask0" src="masque.png" style="display:none;position:absolute;top:100px;left:45px">
 <div id="noms">
 <div id="nom1" class="nomsen" onclick="verif1(1)"></div>
 <div id="nom2" class="nomsen" onclick="verif1(2)"></div>
@@ -1464,12 +1612,12 @@
 </div> <!--/game1-->
 
 <div id="game2" style="display:none">
-<div id="nom0" title="Il faut cliquer sur la photo qui correspond à ce nom.  (clavier : touches [1] à [5])"></div>
-<img id="img1" class="imgsen" onclick="verif2(1)">
-<img id="img2" class="imgsen" onclick="verif2(2)">
-<img id="img3" class="imgsen" onclick="verif2(3)">
-<img id="img4" class="imgsen" onclick="verif2(4)">
-<img id="img5" class="imgsen" onclick="verif2(5)">
+<div id="nom0" title="Il faut cliquer sur la photo qui correspond à ce nom. (clavier : touches [1] à [5])"></div>
+<img id="img1" class="imgsen" onclick="verif2(1)"><img id="mask1" src="masque.png" style="display:none;position:absolute;top:150px;left:45px">
+<img id="img2" class="imgsen" onclick="verif2(2)"><img id="mask2" src="masque.png" style="display:none;position:absolute;top:150px;left:212px">
+<img id="img3" class="imgsen" onclick="verif2(3)"><img id="mask3" src="masque.png" style="display:none;position:absolute;top:150px;left:379px">
+<img id="img4" class="imgsen" onclick="verif2(4)"><img id="mask4" src="masque.png" style="display:none;position:absolute;top:150px;left:546px">
+<img id="img5" class="imgsen" onclick="verif2(5)"><img id="mask5" src="masque.png" style="display:none;position:absolute;top:150px;left:713px">
 <img id="imgok">
 <img id="imgno">&nbsp;<span id="nomindic"></span>
 </div> <!--/game2-->

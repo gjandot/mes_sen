@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Guillaume JANDOT">
+<meta charset="UTF-8">
+<title>Mes-Sen / Outil "masques"</title>
+<style>
+#messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
+#img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
+.bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; display:inline-block; }
+.bouton:hover { color:white; }
+
+</style>
+<noscript>L'application nécessite l'activation de Javascript.</noscript>
+<script type="text/javascript" src="datamask.js"></script> <!--//tab_datamask[[mat, s, x, y]]-->
+<script type="text/javascript">
+// Pour déplacer le masque :
+// un clic pour commencer le déplacement; un clic pour reposer le masque.
+//
+// Pour changer la taille du masque : molette de la souris.
+//
+// Les données sont mises à jour dans la zone de texte à chaque clic sur le bouton "Suivant".
+// 	(à copier-coller)
+//
+
+
+
+ const BASE_SEN_URL = "https://www.senat.fr/";
+ var tab_senateurs = []; //objets "senateur"
+	// .mat
+	// .img
+	// .scale
+	// .offx
+	// .offy
+ var tab_guests = [];
+	// .nom_obj
+	// .id
+	// .scale
+	// .offx
+	// .offy
+	
+ var cpt = 0;
+ var guestmode = false;
+ var scale = 1.0;
+ var offx = 0;
+ var offy = 0;
+ var DEF_SCALE = 1.0;
+ var DEF_OFFX = 45;
+ var DEF_OFFY = 100;
+ var mouv = false;
+ 
+ const tab_gueststars_H = [ 
+	["François ABADIE","abadie_francois83008p",0.73,43,101],
+	["Robert BADINTER","badinter_robert95006b",0.73,46,90],
+	["Christian BONNET","bonnet_christian83016p",0.76,49,96],
+	["Yvon BOURGES","bourges_yvon80011v",0.67,48,87],
+	["Michel CHARASSE","charasse_michel81015e",0.85,44,94],
+	["Raymond COURRIÈRE","courriere_raymond74050q",0.7,48,96],
+	["Maurice COUVE DE MURVILLE","couve_de_murville_maurice59529v",0.88,44,130],
+	["Serge DASSAULT","dassault_serge04055h",0.67,46,78],
+	["Edgar FAURE","faure_edgar000197",0.85,39,109],
+	["Jean FRANÇOIS-PONCET","francois_poncet_jean83033q",0.7,45,81],
+	["André LABARRÈRE","labarrere_andre01032m",0.67,50,101],
+	["Pierre MAUROY","mauroy_pierre92037v",0.7,47,86],
+	["François MITTERAND","mitterrand_francois000379",0.94,56,124],
+	["Gaston MONNERVILLE","monnerville_gaston000677",0.91,42,115],
+	["René MONORY","monory_rene68036e",0.67,47,86],
+	["Charles PASQUA","pasqua_charles77053g",0.67,46,70],
+	["Jacques PELLETIER","pelletier_jacques66002k",0.64,51,93],
+	["Alain PEYREFITTE","peyrefitte_alain95054k",0.73,35,101],
+	["Alain POHER","poher_alain000211",0.85,44,116],
+	["Christian PONCELET","poncelet_christian77058m",0.7,52,94],
+	["Roger QUILLIOT","quilliot_roger74041p",0.94,65,122],
+	["Jack RALITE","ralite_jack95060h",0.73,47,115],
+	["Michel ROCARD","rocard_michel95064m",0.7,48,114],
+	["Roger ROMANI","romani_roger59312e",0.88,47,98],
+	["Maurice SCHUMANN","schumann_maurice74044s",0.88,36,102],
+	["René TEULADE","teulade_rene08046y",0.79,45,91]
+ ];
+
+ const tab_gueststars_F = [
+	["Magdeleine ANGLADE","anglade_magdeleine000465",0.91,52,128],
+	["Nicole BRICQ","bricq_nicole04053f",0.88,52,92],
+	["Paulette BRISEPIERRE","brisepierre_paulette89023p",0.61,48,88],
+	["Dinah DERYCKE","derycke_dinah97007l",0.64,55,96],
+	["Colette GIUDICELLI","giudicelli_colette08041t",0.73,55,87],
+	["Nicole de HAUTECLOCQUE","de_hauteclocque_nicole000310",0.82,43,125],
+	["Lucette MICHAUX-CHEVRY","michaux_chevry_lucette95050f",0.79,51,116],
+	["Hélène MISSOFFE","missoffe_helene59552u",0.79,42,123],
+	["Nelly OLIN","olin_nelly95051g",0.58,41,96],
+	["Monique PAPON","papon_monique01054t",0.76,48,91],
+	["Jeannette THOREZ VERMEERSCH","thorez_vermeersch_jeannette56829s",0.82,54,130]
+ ];
+ 
+// refactoring / helpers
+ function elt(nom_obj)  { return document.getElementById(nom_obj); }
+ function show(nom_obj) { elt(nom_obj).style.display = ""; }
+ function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
+ function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
+ function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
+ 
+ function sen2id(str)
+ {
+	var r = str.toLowerCase();
+	r = r.replace(new RegExp(/[àáâãäå]/g),"a");
+	r = r.replace(new RegExp(/ç/g),"c");
+	r = r.replace(new RegExp(/[èéêë]/g),"e");
+	r = r.replace(new RegExp(/[ìíîï]/g),"i");
+	r = r.replace(new RegExp(/ñ/g),"n");                
+	r = r.replace(new RegExp(/[òóôõö]/g),"o");
+	r = r.replace(new RegExp(/[ùúûü]/g),"u");
+	r = r.replace(new RegExp(/[ýÿ]/g),"y");
+	r = r.replace(new RegExp(/ /g),"_");
+	r = r.replace(new RegExp(/-/g),"_");
+	return r;
+ }
+ 
+//////////////////////////
+ 
+ function start()
+ {
+	document.body.style.backgroundColor = "black";
+	elt("mask").addEventListener("mousedown", unclic, false);
+	elt("mask").onwheel = zoom;
+	majscale();
+	
+	var param = window.location.search.toLowerCase(); 
+	
+	if (param== "?guests")
+	{
+		guestmode = true;
+		//loading guests data
+		for (i=0; i<tab_gueststars_H.length; i++)
+		{
+			var guest = new Object();
+			guest.nom = tab_gueststars_H[i][0];
+			guest.id = tab_gueststars_H[i][1];
+			guest.scale = tab_gueststars_H[i][2];
+			guest.offx = tab_gueststars_H[i][3];
+			guest.offy = tab_gueststars_H[i][4];
+			tab_guests.push(guest);
+		}
+		for (i=0; i<tab_gueststars_F.length; i++)
+		{
+			var guest = new Object();
+			guest.nom = tab_gueststars_F[i][0];
+			guest.id = tab_gueststars_F[i][1];
+			guest.scale = tab_gueststars_F[i][2];
+			guest.offx = tab_gueststars_F[i][3];
+			guest.offy = tab_gueststars_F[i][4];
+			tab_guests.push(guest);
+		}		
+		nextimg(true);
+	}
+	else
+	{
+		ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+	}
+ }
+ 
+ function parsing(texte)
+ {
+	var jsonobj = JSON.parse(texte);
+	var jsen = jsonobj['senateurs'];
+	for (i=0; i<jsen.length; i++)
+	{
+		nom = jsen[i]['etat_civil']['nomusecap'];
+		prenom = jsen[i]['etat_civil']['prenomuse'];
+		mat = jsen[i]['matricule'];
+		id = nom + "_" + prenom + mat;
+		id = sen2id(id);
+		var senateur = new Object();
+		senateur.mat = mat;
+		senateur.img = id2img(id);
+		senateur.scale = DEF_SCALE;
+		senateur.offx = DEF_OFFX;
+		senateur.offy = DEF_OFFY;
+		tab_senateurs.push(senateur);
+	}
+	
+	//parsing mask data
+	for (i=0; i<tab_datamask.length; i++)
+	//tab_datamask[[[mat, scale, offset_x, offset_y]]
+	{
+		idx = find_sen(tab_datamask[i][0]); //matricule
+		if (idx > -1)
+		{
+			senateur = tab_senateurs[idx]; //
+			senateur.scale = tab_datamask[i][1]; //scale
+			senateur.offx = tab_datamask[i][2]; //offset_x
+			senateur.offy = tab_datamask[i][3]; //offset_y
+		}
+	}
+	
+	cpt = 0;
+	nextimg(true);
+ }
+ 
+ function save()
+ {
+	var datastr = "";
+	for (i=0; i<tab_senateurs.length; i++)
+	{
+		var sen = tab_senateurs[i];
+		datastr = datastr + "[\"" + sen.mat + "\"," + sen.scale + "," + sen.offx + "," + sen.offy + "],\n";
+	}
+	elt("save").innerHTML = datastr;
+ }
+
+ function save_guests()
+ {
+	var datastr = "";
+	for (i=0; i<tab_guests.length; i++)
+	{
+		var gst = tab_guests[i];
+		
+		datastr = datastr + "[\"" + gst.nom + "\",\"" + gst.id + "\"," + gst.scale + "," + gst.offx + "," + gst.offy + "],\n";
+	}	
+	elt("save").innerHTML = datastr;
+ }
+ 
+ function find_sen(mat)
+ {
+	var res = -1;
+	{
+		for (i=0; i<tab_senateurs.length; i++)
+		{
+			if (tab_senateurs[i].mat==mat)
+			{
+				res = i;
+				break;
+			}
+		}
+	}
+	return res;
+ }
+ 
+ function nextimg(premier)
+ {
+	if (!premier)
+	{
+		if (guestmode)
+		{
+			tab_guests[cpt].scale = scale;
+			tab_guests[cpt].offx = offx;
+			tab_guests[cpt].offy = offy;
+			save_guests();
+			cpt++;
+			if (cpt>=(tab_gueststars_H.length+tab_gueststars_F.length))
+			{
+				cpt = 0;
+			}
+		}
+		else //normal
+		{
+			//enregistrement des éventuelles modifications
+			tab_senateurs[cpt].scale = scale;
+			tab_senateurs[cpt].offx = offx;
+			tab_senateurs[cpt].offy = offy;
+			save();
+			//passage au suivant
+			cpt++;
+			if (cpt>=tab_senateurs.length)
+			{
+				cpt = 0;
+			}
+		}
+	}
+
+	if (guestmode)
+	{
+		//H
+		elt("img0").src = id2img(tab_guests[cpt].id);
+		scale = tab_guests[cpt].scale;
+		majscale();
+		offx = tab_guests[cpt].offx;
+		offy = tab_guests[cpt].offy;
+		majoffset();
+	}
+	else //normal
+	{
+		elt("img0").src = tab_senateurs[cpt].img;
+		scale = tab_senateurs[cpt].scale;
+		majscale();
+		offx = tab_senateurs[cpt].offx;
+		offy = tab_senateurs[cpt].offy;
+		majoffset();
+	}
+ }
+ 
+
+ function ajax(url,callback)
+ {
+	var httpRequest = new XMLHttpRequest();
+	if (!httpRequest){ return false; }
+	httpRequest.onreadystatechange=function()
+	{
+		try
+		{
+			if (( httpRequest.readyState===XMLHttpRequest.DONE) && (httpRequest.status===200) )
+			{
+				callback(httpRequest.responseText);
+			}
+		} catch(e){ return false; }
+	}
+	httpRequest.open('GET',url);
+	httpRequest.send();
+	return true;
+ }
+ 
+ function majscale()
+ {
+	elt("mask").style.transform = `scale(${scale})`;
+	elt("par_scale").innerHTML = scale;
+ }
+ 
+ function zoom(event) {
+	event.preventDefault();
+	scale += event.deltaY *(-0.01);
+	scale = Math.round(scale*100)/100;
+	majscale();
+ }
+ 
+ function majoffset()
+ {
+	elt("mask").style.left = offx + "px";
+	elt("mask").style.top = offy + "px";
+	elt("par_offx").innerHTML = offx;
+	elt("par_offy").innerHTML = offy;
+ }
+
+ function move(e)
+ {
+	offx = e.clientX-250;
+	offy = e.clientY-45;
+	majoffset();
+ }
+
+ function unclic(e)
+ {
+	if (mouv)
+	{
+		document.removeEventListener("mousemove", move);
+		mouv = !mouv;
+		return;
+	}
+
+	mouv = !mouv;
+	document.addEventListener("mousemove", move, false);
+ }
+ 
+</script>
+</head>
+<body onload="start()" style="user-select:none">
+
+<div id="messen">
+<img id="img0">
+<img id="mask" src="masque.png" style="position:absolute;top:100px;left:45px">
+<div id="params">
+<div id="par_scale"></div>
+<div id="par_offx"></div>
+<div id="par_offy"></div>
+</div> <!--params-->
+<button id="next" onclick="nextimg(false);" class="bouton">Suivant</button>
+<textarea id="save" rows="5" cols="33"></textarea>
+</div> <!--/messen-->
+ 
+</body>
+</html>
