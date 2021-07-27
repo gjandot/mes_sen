@@ -37,7 +37,7 @@
 			border:3px solid white; color:black; background-color:blue; margin:9px; padding:3px; float:right; }
 #questprog { border:1px solid white; color:white; background-color:#222266; padding:7px; border-radius:12px; position:relative; }
 #questbar { background-color:blue; width:50%; border-radius:9px; padding-top:5px; padding-bottom:5px; }
-#questnum { text-align:center; width:100%; position:absolute; top:11px;}
+#questnum { text-align:center; width:100%; position:absolute; top:11px; }
 
 #img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
 #noms { float:left; margin-top:25px; }
@@ -85,7 +85,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.031"; //G. JANDOT 24/07/2021
+ const VERNUM = "1.032"; //G. JANDOT 27/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -111,6 +111,7 @@
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
  const BASE_SEN_URL = "https://www.senat.fr/";
+ const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json"; 
  const CIVIL_HOMME = "M.";
  const SEXE_HOMME = "H";
  const SEXE_FEMME = "F";
@@ -158,7 +159,7 @@
  var mask_on = false;
  var cur_game = 0;
  var tps_timeout;
-var cit_timeout;
+ var cit_timeout;
  var numcit = -1;
  var cancit = false;
  const CIT_DELAY = 45000; //ms (=45s) 	- délai entre deux citations
@@ -264,7 +265,23 @@ var cit_timeout;
  function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
- function rnd(n)		{ return Math.floor(n*Math.random()); }
+ function rnd(n)		{ return Math.floor(n*Math.random()); } 
+ 
+ function multishow(nom, ideb, ifin)
+ {
+	for (i=ideb; i<=ifin; i++)
+	{
+		show(nom+i);
+	}
+ }
+
+ function multihide(nom, ideb, ifin)
+ {
+	for (i=ideb; i<=ifin; i++)
+	{
+		hide(nom+i);
+	}
+ }
  
 //////////////////////////
  
@@ -297,7 +314,7 @@ var cit_timeout;
 	
 	document.addEventListener('keyup', keyboard);
 
-	ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+	ajax(DATA_URL, parsing);
  }
  
  function strnorm(str)
@@ -402,7 +419,7 @@ var cit_timeout;
 	}
 	numcit = newcit;
  	var citation = tab_citations[numcit];
-	elt("citation").style.top= rnd(300)+"px";
+	elt("citation").style.top= rnd(300) + "px";
  	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
  }
  
@@ -413,7 +430,7 @@ var cit_timeout;
 	for (i=0; i<tab_citations.length; i++)
 	{
 		var citation = tab_citations[i];
-		elt("citation").style.top= rnd(300)+"px";
+		elt("citation").style.top= rnd(300) + "px";
 		elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
 		console.log(citation[0]);
 		console.log(fullurl(citation[1]));
@@ -659,7 +676,7 @@ var cit_timeout;
 			if (position>-1) //le remplacement n'a pas déjà été fait
 			{
 				longueur = id2img(tab_senateurs[i].id).length;
-				str = str.substring(0,position) + "nopict.jpg" + str.substring(position+longueur)
+				str = str.substring(0,position) + "nopict.jpg" + str.substring(position+longueur);
 				trombi_corr++;
 			}
 		}
@@ -671,7 +688,7 @@ var cit_timeout;
  function ajax(url,callback)
  {
 	var httpRequest = new XMLHttpRequest();
-	if (!httpRequest){ return false; }
+	if (!httpRequest) { return false; }
 	httpRequest.onreadystatechange=function()
 	{
 		try
@@ -680,7 +697,7 @@ var cit_timeout;
 			{
 				callback(httpRequest.responseText);
 			}
-		} catch(e){ return false; }
+		} catch(e) { return false; }
 	}
 	httpRequest.open('GET',url);
 	httpRequest.send();
@@ -702,7 +719,7 @@ var cit_timeout;
 			show("game1");
 			cur_game = 1;
 			game1(-1);
-			break
+			break;
 		case 2:
 			show("game2");
 			cur_game = 2;
@@ -779,8 +796,8 @@ var cit_timeout;
 	var stars = 0;
 	const UTF8_STAR = "&#x2B50;";
 	const UTF8_EMPTY_STAR = "&#x2606;";
-	if (score>=SCORE_1) 	{ stars++; }
-	if (score>=SCORE_2) 	{ stars++; }
+	if (score>=SCORE_1) 	 { stars++; }
+	if (score>=SCORE_2) 	 { stars++; }
 	if (score>=NB_MAX_QUEST) { stars++; }
 	for (i=0; i<stars; i++)   { res += NBSP + UTF8_STAR; }
 	for (i=0; i<3-stars; i++) {	res += NBSP + UTF8_EMPTY_STAR; }
@@ -992,7 +1009,6 @@ var cit_timeout;
 		if (mask_on)
 		{
 			elt("mask0").style.transform = `scale(${tab_senateurs[num1].m_scale})`;
-			//elt("mask0").style.position = "absolute";
 			elt("mask0").style.left = tab_senateurs[num1].m_offx + "px";
 			elt("mask0").style.top = (tab_senateurs[num1].m_offy+45) + "px";
 			show("mask0");
@@ -1104,11 +1120,7 @@ var cit_timeout;
 		elt("nomok").innerHTML = nomcomplet(vnum);
 	} // mode normal
 
-	show("nom1");
-	show("nom2");
-	show("nom3");
-	show("nom4");
-	show("nom5");
+	multishow("nom", 1, 5);
 	show("temps");
 	hordeb = Date.now();
 	showtime();
@@ -1118,11 +1130,7 @@ var cit_timeout;
  function verif1(rep)
  {
 	clearTimeout(tps_timeout);
-	hide("nom1");
-	hide("nom2");
-	hide("nom3");
-	hide("nom4");
-	hide("nom5");
+	multihide("nom", 1, 5);
 	hide("mask0");
 	var delay = DELAY_SHORT;
 	if ((rep!==bonrep) && (rep>0)) //rep==0 : time's out
@@ -1258,38 +1266,25 @@ var cit_timeout;
 	if (mask_on)
 	{
 		elt("mask1").style.transform = `scale(${tab_senateurs[num1].m_scale})`;
-		//elt("mask1").style.position = "absolute";
 		elt("mask1").style.left = (tab_senateurs[num1].m_offx - 3) + "px";
 		elt("mask1").style.top = (tab_senateurs[num1].m_offy + 115) + "px";
-		show("mask1");
 		elt("mask2").style.transform = `scale(${tab_senateurs[num2].m_scale})`;
-		//elt("mask2").style.position = "absolute";
 		elt("mask2").style.left = (tab_senateurs[num2].m_offx + MASK_H_AJUST -3 ) + "px";
 		elt("mask2").style.top = (tab_senateurs[num2].m_offy + 115) + "px";
-		show("mask2");
 		elt("mask3").style.transform = `scale(${tab_senateurs[num3].m_scale})`;
-		//elt("mask3").style.position = "absolute";
 		elt("mask3").style.left = (tab_senateurs[num3].m_offx + 2*MASK_H_AJUST - 3) + "px";
 		elt("mask3").style.top = (tab_senateurs[num3].m_offy + 115) + "px";
-		show("mask3");
 		elt("mask4").style.transform = `scale(${tab_senateurs[num4].m_scale})`;
-		//elt("mask4").style.position = "absolute";
 		elt("mask4").style.left = (tab_senateurs[num4].m_offx + 3*MASK_H_AJUST- 3) + "px";
 		elt("mask4").style.top = (tab_senateurs[num4].m_offy + 115) + "px";
-		show("mask4");
 		elt("mask5").style.transform = `scale(${tab_senateurs[num5].m_scale})`;
-		//elt("mask5").style.position = "absolute";
 		elt("mask5").style.left = (tab_senateurs[num5].m_offx + 4*MASK_H_AJUST - 3) + "px";
 		elt("mask5").style.top = (tab_senateurs[num5].m_offy + 115) + "px";
-		show("mask5");
+		multishow("mask", 1, 5);
 	}
 	else
 	{
-		hide("mask1");
-		hide("mask2");
-		hide("mask3");
-		hide("mask4");
-		hide("mask5");
+		multihide("mask", 1, 5);
 	}
 
 	tab_bonrep[0] = num1;
@@ -1358,11 +1353,7 @@ var cit_timeout;
 		elt(varmask).style.top = (tab_senateurs[vnum].m_offy + 115) + "px";
 	}
 	elt("imgok").src = elt(varimg).src;
-	show("img1");
-	show("img2");
-	show("img3");
-	show("img4");
-	show("img5");
+	multishow("img", 1, 5);
 	show("temps");
 	hordeb = Date.now();
 	showtime();
@@ -1372,16 +1363,8 @@ var cit_timeout;
  function verif2(rep)
  {
 	clearTimeout(tps_timeout);
- 	hide("img1");
-	hide("img2");
-	hide("img3");
-	hide("img4");
-	hide("img5");
-	hide("mask1");
-	hide("mask2");
-	hide("mask3");
-	hide("mask4");
-	hide("mask5");
+	multihide("img", 1, 5);
+	multihide("mask", 1, 5);
 	show("imgok");
 	var delay = DELAY_SHORT;
 	if ( (rep!==bonrep) && (rep>0) ) //rep==0 : time's out
