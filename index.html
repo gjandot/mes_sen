@@ -85,7 +85,7 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.032"; //G. JANDOT 27/07/2021
+ const VERNUM = "1.033"; //G. JANDOT 28/07/2021
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -269,7 +269,7 @@
  
  function multishow(nom, ideb, ifin)
  {
-	for (i=ideb; i<=ifin; i++)
+	for (var i=ideb; i<=ifin; i++)
 	{
 		show(nom+i);
 	}
@@ -277,7 +277,7 @@
 
  function multihide(nom, ideb, ifin)
  {
-	for (i=ideb; i<=ifin; i++)
+	for (var i=ideb; i<=ifin; i++)
 	{
 		hide(nom+i);
 	}
@@ -342,7 +342,7 @@
  
  function is_sen(prenom, nom)
  {
-	for (i=0; i<tab_senateurs.length; i++)
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
 		if (tab_senateurs[i].nom==nom)
 		{
@@ -355,20 +355,16 @@
 	return false;
  }
  
-  function find_sen(mat)
+ function find_sen(mat)
  {
-	var res = -1;
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
-		for (i=0; i<tab_senateurs.length; i++)
+		if (tab_senateurs[i].mat==mat)
 		{
-			if (tab_senateurs[i].mat==mat)
-			{
-				res = i;
-				break;
-			}
+			return i;
 		}
 	}
-	return res;
+	return -1;
  }
 
  
@@ -427,7 +423,7 @@
  {
 	show("messen");
 	show("citation");
-	for (i=0; i<tab_citations.length; i++)
+	for (var i=0; i<tab_citations.length; i++)
 	{
 		var citation = tab_citations[i];
 		elt("citation").style.top= rnd(300) + "px";
@@ -439,12 +435,12 @@
  
  function test_gueststars()
  {
-	for (i=0; i<tab_gueststars_H.length; i++)
+	for (var i=0; i<tab_gueststars_H.length; i++)
 	{
 		console.log(tab_gueststars_H[i][0]);
 		console.log(id2img(tab_gueststars_H[i][1]));
 	}
-	for (i=0; i<tab_gueststars_F.length; i++)
+	for (var i=0; i<tab_gueststars_F.length; i++)
 	{
 		console.log(tab_gueststars_F[i][0]);
 		console.log(id2img(tab_gueststars_F[i][1]));
@@ -499,7 +495,7 @@
 	}
 	else
 	{
-		for (i=0; i<jsen.length; i++)
+		for (var i=0; i<jsen.length; i++)
 		{
 			var senateur = new Object();
 			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
@@ -520,6 +516,12 @@
 			senateur.mat = jsen[i]['matricule'];
 			senateur.id = senateur.nom + "_" + senateur.prenom + senateur.mat;
 			senateur.id = sen2id(senateur.id);
+			
+			//default mask
+			senateur.m_scale = DEF_M_SCALE;
+			senateur.m_offx = DEF_M_OFFX;
+			senateur.m_offy = DEF_M_OFFY;
+			
 			try 
 			{
 				senateur.groupe = jsen[i]['groupe_politique']['nom_court'];
@@ -557,22 +559,16 @@
 		}
 		
 		//parsing mask data
-		for (i=0; i<tab_datamask.length; i++)
+		for (var i=0; i<tab_datamask.length; i++)
 		//tab_datamask[[["mat", scale, offset_x, offset_y]]
 		{
 			idx = find_sen(tab_datamask[i][0]); //matricule
 			if (idx > -1)
 			{
-				senateur = tab_senateurs[idx]; //
+				senateur = tab_senateurs[idx];
 				senateur.m_scale = tab_datamask[i][1]; //scale
 				senateur.m_offx = tab_datamask[i][2]; //offset_x
 				senateur.m_offy = tab_datamask[i][3]; //offset_y
-			}
-			else
-			{
-				senateur.m_scale = DEF_M_SCALE;
-				senateur.m_offx = DEF_M_OFFX;
-				senateur.m_offy = DEF_M_OFFY;
 			}
 		}
 		
@@ -625,13 +621,13 @@
 		tab_groupes.sort();
 		var grp = elt("selgrp");
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
-		for (i=0; i< tab_groupes.length; i++)
+		for (var i=0; i< tab_groupes.length; i++)
 		{
 			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>";
 		}
 		var com = elt("selcom");
 		com.innerHTML = "<option value=\"\">" + NO_COMM + "</option>";
-		for (i=0; i< tab_commissions.length; i++)
+		for (var i=0; i< tab_commissions.length; i++)
 		{
 			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>";
 		}
@@ -668,7 +664,7 @@
  //remplacement des images non trouvées par une image générique
  {
 	var str = elt("listsen").innerHTML;
-	for (i=0; i<tab_senateurs.length; i++)
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
 		if (!tab_senateurs[i].imgok)
 		{
@@ -799,8 +795,8 @@
 	if (score>=SCORE_1) 	 { stars++; }
 	if (score>=SCORE_2) 	 { stars++; }
 	if (score>=NB_MAX_QUEST) { stars++; }
-	for (i=0; i<stars; i++)   { res += NBSP + UTF8_STAR; }
-	for (i=0; i<3-stars; i++) {	res += NBSP + UTF8_EMPTY_STAR; }
+	for (var i=0; i<stars; i++)   { res += NBSP + UTF8_STAR; }
+	for (var i=0; i<3-stars; i++) {	res += NBSP + UTF8_EMPTY_STAR; }
 	return res;
  }
  
@@ -1097,7 +1093,7 @@
 				sexe = tab_senateurs[vnum].sexe;
 			}
 			prop_ok = true;
-			for (i=0; i<tab_pastprop.length; i++)
+			for (var i=0; i<tab_pastprop.length; i++)
 			{
 				if (vnum==tab_pastprop[i])
 				{
@@ -1331,7 +1327,7 @@
 			sexe = tab_senateurs[vnum].sexe;
 		}
 		prop_ok = true;
-		for (i=0; i<tab_pastprop.length; i++)
+		for (var i=0; i<tab_pastprop.length; i++)
 		{
 			if (vnum==tab_pastprop[i])
 			{
@@ -1470,7 +1466,7 @@
 		show("reset");
 	}
 
-	for (i=0; i<tab_senateurs.length; i++)
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
 		if (tab_senateurs[i].sexe == SEXE_HOMME)
 		{
@@ -1520,7 +1516,7 @@
 	}
 
 	var cptsen = 0;
-	for (i=0; i<tab_senateurs.length; i++)
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
 		if (elt(tab_senateurs[i].id).style.display == "")
 		{
