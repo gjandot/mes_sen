@@ -27,6 +27,7 @@
 
 
  const BASE_SEN_URL = "https://www.senat.fr/";
+ const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json"; 
  var tab_senateurs = []; //objets "senateur"
 	// .mat
 	// .img
@@ -131,7 +132,7 @@
 	{
 		guestmode = true;
 		//loading guests data
-		for (i=0; i<tab_gueststars_H.length; i++)
+		for (var i=0; i<tab_gueststars_H.length; i++)
 		{
 			var guest = new Object();
 			guest.nom = tab_gueststars_H[i][0];
@@ -141,7 +142,7 @@
 			guest.offy = tab_gueststars_H[i][4];
 			tab_guests.push(guest);
 		}
-		for (i=0; i<tab_gueststars_F.length; i++)
+		for (var i=0; i<tab_gueststars_F.length; i++)
 		{
 			var guest = new Object();
 			guest.nom = tab_gueststars_F[i][0];
@@ -155,7 +156,7 @@
 	}
 	else
 	{
-		ajax("https://www.senat.fr/senateurs/sens_alpha.json", parsing);
+		ajax(DATA_URL, parsing);
 	}
  }
  
@@ -163,7 +164,7 @@
  {
 	var jsonobj = JSON.parse(texte);
 	var jsen = jsonobj['senateurs'];
-	for (i=0; i<jsen.length; i++)
+	for (var i=0; i<jsen.length; i++)
 	{
 		nom = jsen[i]['etat_civil']['nomusecap'];
 		prenom = jsen[i]['etat_civil']['prenomuse'];
@@ -180,7 +181,7 @@
 	}
 	
 	//parsing mask data
-	for (i=0; i<tab_datamask.length; i++)
+	for (var i=0; i<tab_datamask.length; i++)
 	//tab_datamask[[[mat, scale, offset_x, offset_y]]
 	{
 		idx = find_sen(tab_datamask[i][0]); //matricule
@@ -200,7 +201,7 @@
  function save()
  {
 	var datastr = "";
-	for (i=0; i<tab_senateurs.length; i++)
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
 		var sen = tab_senateurs[i];
 		datastr = datastr + "[\"" + sen.mat + "\"," + sen.scale + "," + sen.offx + "," + sen.offy + "],\n";
@@ -211,7 +212,7 @@
  function save_guests()
  {
 	var datastr = "";
-	for (i=0; i<tab_guests.length; i++)
+	for (var i=0; i<tab_guests.length; i++)
 	{
 		var gst = tab_guests[i];
 		
@@ -222,18 +223,14 @@
  
  function find_sen(mat)
  {
-	var res = -1;
+	for (var i=0; i<tab_senateurs.length; i++)
 	{
-		for (i=0; i<tab_senateurs.length; i++)
+		if (tab_senateurs[i].mat==mat)
 		{
-			if (tab_senateurs[i].mat==mat)
-			{
-				res = i;
-				break;
-			}
+			return i;
 		}
 	}
-	return res;
+	return -1;
  }
  
  function nextimg(premier)
@@ -317,8 +314,13 @@
  
  function zoom(event) {
 	event.preventDefault();
-	scale += event.deltaY *(-0.01);
+	var oldscale = scale;
+	scale += event.deltaY *(-0.001);
 	scale = Math.round(scale*100)/100;
+	if ((scale>2) || (scale<0.1))
+	{
+		scale = oldscale;
+	}
 	majscale();
  }
  
