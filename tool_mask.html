@@ -49,6 +49,7 @@
  var DEF_SCALE = 1.0;
  var DEF_OFFX = 45;
  var DEF_OFFY = 100;
+ var SCALE_STEP = 0.03;
  var mouv = false;
  
  const tab_gueststars_H = [ 
@@ -233,6 +234,29 @@
 	return -1;
  }
  
+ function dispimg()
+ {
+ 	if (guestmode)
+	{
+		//H
+		elt("img0").src = id2img(tab_guests[cpt].id);
+		scale = tab_guests[cpt].scale;
+		majscale();
+		offx = tab_guests[cpt].offx;
+		offy = tab_guests[cpt].offy;
+		majoffset();
+	}
+	else //normal
+	{
+		elt("img0").src = tab_senateurs[cpt].img;
+		scale = tab_senateurs[cpt].scale;
+		majscale();
+		offx = tab_senateurs[cpt].offx;
+		offy = tab_senateurs[cpt].offy;
+		majoffset();
+	}
+}
+ 
  function nextimg(premier)
  {
 	if (!premier)
@@ -265,25 +289,36 @@
 		}
 	}
 
+	dispimg();
+ }
+
+ function previmg()
+ {
 	if (guestmode)
 	{
-		//H
-		elt("img0").src = id2img(tab_guests[cpt].id);
-		scale = tab_guests[cpt].scale;
-		majscale();
-		offx = tab_guests[cpt].offx;
-		offy = tab_guests[cpt].offy;
-		majoffset();
+		tab_guests[cpt].scale = scale;
+		tab_guests[cpt].offx = offx;
+		tab_guests[cpt].offy = offy;
+		save_guests();
+		cpt--;
+		if (cpt<0)
+		{
+			cpt= tab_gueststars_H.length+tab_gueststars_F.length-1;
+		}
 	}
 	else //normal
 	{
-		elt("img0").src = tab_senateurs[cpt].img;
-		scale = tab_senateurs[cpt].scale;
-		majscale();
-		offx = tab_senateurs[cpt].offx;
-		offy = tab_senateurs[cpt].offy;
-		majoffset();
+		tab_senateurs[cpt].scale = scale;
+		tab_senateurs[cpt].offx = offx;
+		tab_senateurs[cpt].offy = offy;
+		save();
+		cpt--;
+		if (cpt<0)
+		{
+			cpt=tab_senateurs.length-1;
+		}
 	}
+	dispimg();
  }
  
 
@@ -315,7 +350,14 @@
  function zoom(event) {
 	event.preventDefault();
 	var oldscale = scale;
-	scale += event.deltaY *(-0.001);
+	if (event.deltaY>0) //mouse sensitivity doesn't matter
+	{
+		scale -= SCALE_STEP;
+	}
+	else
+	{
+		scale += SCALE_STEP;
+	}
 	scale = Math.round(scale*100)/100;
 	if ((scale>2) || (scale<0.1))
 	{
@@ -364,7 +406,8 @@
 <div id="par_offx"></div>
 <div id="par_offy"></div>
 </div> <!--params-->
-<button id="next" onclick="nextimg(false);" class="bouton">Suivant</button>
+<button id="next" onclick="previmg();" class="bouton"><< Précédent</button>
+<button id="next" onclick="nextimg(false);" class="bouton">Suivant >></button>
 <textarea id="save" rows="5" cols="33"></textarea>
 </div> <!--/messen-->
  
