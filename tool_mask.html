@@ -8,6 +8,7 @@
 <style>
 #messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
 #img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
+#nom { color: white; font-size:1.5em; }
 .bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; display:inline-block; }
 .bouton:hover { color:white; }
 
@@ -30,6 +31,8 @@
  const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json"; 
  var tab_senateurs = []; //objets "senateur"
 	// .mat
+	// .nom
+	// .prenom
 	// .img
 	// .scale
 	// .offx
@@ -173,6 +176,8 @@
 		id = nom + "_" + prenom + mat;
 		id = sen2id(id);
 		var senateur = new Object();
+		senateur.nom = jsen[i]['etat_civil']['nomusecap'];
+		senateur.prenom = jsen[i]['etat_civil']['prenomuse'];
 		senateur.mat = mat;
 		senateur.img = id2img(id);
 		senateur.scale = DEF_SCALE;
@@ -240,6 +245,7 @@
 	{
 		//H
 		elt("img0").src = id2img(tab_guests[cpt].id);
+		elt("nom").innerHTML = tab_guests[cpt].nom;
 		scale = tab_guests[cpt].scale;
 		majscale();
 		offx = tab_guests[cpt].offx;
@@ -249,6 +255,7 @@
 	else //normal
 	{
 		elt("img0").src = tab_senateurs[cpt].img;
+		elt("nom").innerHTML = tab_senateurs[cpt].nom + " " + tab_senateurs[cpt].prenom;
 		scale = tab_senateurs[cpt].scale;
 		majscale();
 		offx = tab_senateurs[cpt].offx;
@@ -401,11 +408,13 @@
 <div id="messen">
 <img id="img0">
 <img id="mask" src="masque.png" style="position:absolute;top:100px;left:45px">
+<div id="nom">toto</div>
 <div id="params">
 <div id="par_scale"></div>
 <div id="par_offx"></div>
 <div id="par_offy"></div>
 </div> <!--params-->
+
 <button id="next" onclick="previmg();" class="bouton"><< Précédent</button>
 <button id="next" onclick="nextimg(false);" class="bouton">Suivant >></button>
 <textarea id="save" rows="5" cols="33"></textarea>
