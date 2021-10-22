@@ -11,6 +11,7 @@
 #nom { color: white; font-size:1.5em; }
 .bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; display:inline-block; }
 .bouton:hover { color:white; }
+#save {float : right; }
 
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
@@ -156,7 +157,8 @@
 			guest.offy = tab_gueststars_F[i][4];
 			tab_guests.push(guest);
 		}		
-		nextimg(true);
+		nextimg(0);
+		save_guests();
 	}
 	else
 	{
@@ -201,7 +203,8 @@
 	}
 	
 	cpt = 0;
-	nextimg(true);
+	nextimg(0);
+	save();
  }
  
  function save()
@@ -255,7 +258,7 @@
 	else //normal
 	{
 		elt("img0").src = tab_senateurs[cpt].img;
-		elt("nom").innerHTML = tab_senateurs[cpt].nom + " " + tab_senateurs[cpt].prenom;
+		elt("nom").innerHTML = tab_senateurs[cpt].nom + " " + tab_senateurs[cpt].prenom + " (" + tab_senateurs[cpt].mat + ")";
 		scale = tab_senateurs[cpt].scale;
 		majscale();
 		offx = tab_senateurs[cpt].offx;
@@ -264,9 +267,9 @@
 	}
 }
  
- function nextimg(premier)
+ function nextimg(pas)
  {
-	if (!premier)
+	if (pas!=0)
 	{
 		if (guestmode)
 		{
@@ -274,7 +277,7 @@
 			tab_guests[cpt].offx = offx;
 			tab_guests[cpt].offy = offy;
 			save_guests();
-			cpt++;
+			cpt = cpt + pas;
 			if (cpt>=(tab_gueststars_H.length+tab_gueststars_F.length))
 			{
 				cpt = 0;
@@ -288,7 +291,7 @@
 			tab_senateurs[cpt].offy = offy;
 			save();
 			//passage au suivant
-			cpt++;
+			cpt = cpt + pas;
 			if (cpt>=tab_senateurs.length)
 			{
 				cpt = 0;
@@ -299,7 +302,7 @@
 	dispimg();
  }
 
- function previmg()
+ function previmg(pas)
  {
 	if (guestmode)
 	{
@@ -307,7 +310,7 @@
 		tab_guests[cpt].offx = offx;
 		tab_guests[cpt].offy = offy;
 		save_guests();
-		cpt--;
+		cpt = cpt - pas;
 		if (cpt<0)
 		{
 			cpt= tab_gueststars_H.length+tab_gueststars_F.length-1;
@@ -319,7 +322,7 @@
 		tab_senateurs[cpt].offx = offx;
 		tab_senateurs[cpt].offy = offy;
 		save();
-		cpt--;
+		cpt = cpt - pas;
 		if (cpt<0)
 		{
 			cpt=tab_senateurs.length-1;
@@ -406,18 +409,25 @@
 <body onload="start()" style="user-select:none">
 
 <div id="messen">
-<img id="img0">
-<img id="mask" src="masque.png" style="position:absolute;top:100px;left:45px">
-<div id="nom">toto</div>
-<div id="params">
-<div id="par_scale"></div>
-<div id="par_offx"></div>
-<div id="par_offy"></div>
-</div> <!--params-->
-
-<button id="next" onclick="previmg();" class="bouton"><< Précédent</button>
-<button id="next" onclick="nextimg(false);" class="bouton">Suivant >></button>
-<textarea id="save" rows="5" cols="33"></textarea>
+	<img id="img0">
+	<img id="mask" src="masque.png" style="position:absolute;top:100px;left:45px">
+		<div id="nom"></div>
+		<div id="params">
+		<div id="par_scale"></div>
+		<div id="par_offx"></div>
+		<div id="par_offy"></div>
+	</div><!--/params-->
+	<div id="btns">
+		<button id="prev" onclick="previmg(1);" class="bouton">< Précédent</button>
+		<button id="next" onclick="nextimg(1);" class="bouton">Suivant ></button>
+		<BR><BR>
+		<button id="prev5" onclick="previmg(10);" class="bouton"><< -10</button>
+		<button id="next5" onclick="nextimg(10);" class="bouton">+10 >></button>
+		<BR><BR>
+		<button id="prev50" onclick="previmg(50);" class="bouton"><<< -50</button>
+		<button id="next50" onclick="nextimg(50);" class="bouton">+50 >>></button>
+	</div><!--/btns-->
+	<textarea id="save" rows="5" cols="33"></textarea>
 </div> <!--/messen-->
  
 </body>
