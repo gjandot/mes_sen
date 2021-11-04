@@ -76,6 +76,16 @@
 
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; background-color:#FFCCCC; }
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
+
+/* pour l'impression du trombi : */
+@media print {
+	body, #tools { background-color:white!important; }
+	#back, .reset, #version { display:none; }
+	#trombi { color:black; background-color:white; }
+	.senelt, .sennom, .sendpt { color:black; }
+	#nbsen { border:2px solid grey; }
+
+}
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
 <script type="text/javascript" src="datamask.js"></script> <!--//tab_datamask[["m", s, x, y]]-->
@@ -85,7 +95,8 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.033"; //G. JANDOT 28/07/2021
+ const VERNUM = "1.034";
+ const VERDES = "G. JANDOT - 04/11/2021";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -310,6 +321,7 @@
 	document.body.style.backgroundColor = "black";
 	show("loading");
 	elt("vernum").innerHTML = VERNUM;
+	elt("version").title = VERDES;
 	elt("maskon").checked = mask_on; //(false)
 	
 	document.addEventListener('keyup', keyboard);
@@ -634,7 +646,7 @@
 		reset_trombi(); //init trombi
 		if (trombi_mode==TROMBI_ONLY)
 		{
-			hide("return");
+			hide("back");
 			launch(3);
 		}
 		else
@@ -1612,7 +1624,7 @@
 <select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
 <input id="filtre" type="text" oninput="majtrombi(0)" onfocus="initfilter()" onfocusout="veriffilter()"
 		title="Filtre textuel sur les noms et prénoms">
-<button id="return" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
+<button id="back" onclick="quit()" class="bouton" title="Revenir au menu">Retour</button>
 <id id="nbsen" title="Compteur de résultats"></id>
 <button id="reset" onclick="reset_trombi()" style="display:none" class="bouton reset"
 	title="Effacer tous les filtres de recherche (clavier: touche [0])">Réinitialiser</button>
