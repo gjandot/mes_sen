@@ -95,8 +95,8 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.034";
- const VERDES = "G. JANDOT - 04/11/2021";
+ const VERNUM = "1.035";
+ const VERDES = "G. JANDOT - 12/11/2021";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -637,6 +637,7 @@
 		{
 			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>";
 		}
+		tab_commissions.sort();
 		var com = elt("selcom");
 		com.innerHTML = "<option value=\"\">" + NO_COMM + "</option>";
 		for (var i=0; i< tab_commissions.length; i++)
