@@ -7,7 +7,7 @@ Without "trombi" : http://gjandot.free.fr/mes_sen/?trombi=0<BR>
 Data downloaded from https://data.senat.fr<BR>
 Personnal work (hobby).<BR>
 <BR>
------<BR>
+<HR>
 MES SEN : jeux et trombinoscope interactif sur les sénatrices et sénateurs (France, mandats en cours).<BR>
 http://gjandot.free.fr/mes_sen/<BR>
 Mode "trombi" seul : http://gjandot.free.fr/mes_sen/?trombi (ou ?trombi=1)<BR>
