@@ -95,8 +95,8 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.037";
- const VERDES = "G. JANDOT - 24/05/2022";
+ const VERNUM = "1.038";
+ const VERDES = "G. JANDOT - 08/07/2022";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -114,6 +114,7 @@
  const SCORE_1 = 0.75 * NB_MAX_QUEST;  //(15/20)
  const SCORE_2 = 0.9 * NB_MAX_QUEST;   //(18/20)
  //SCORE_3 = NB_MAX_QUEST
+ const STR_SCORE_FIN = "SCORE FINAL = ";
  const NO_GROUP = "-Tous les groupes-";
  const NO_COMM = "-Toutes les commissions-";
  const NO_CIRC = "-Toutes les circonscriptions-";
@@ -146,7 +147,6 @@
 	// .m_scale (mask scale)
 	// .m_offx (mask x offset)
 	// .m_offy (mask y offset)
-	
 
  var tab_groupes = [];
  var tab_commissions = [];
@@ -906,6 +906,13 @@
 				}
 			}
 			break;
+		case "m":
+		case "M":
+			if (cur_game==0)//menu
+			{
+				change_masque(true); //mettre à jour la case à cocher
+			}
+			break;
 		default:
 			return;
 	}
@@ -945,8 +952,8 @@
 	{		
 		quit();
 		show("score");
-		document.title = APPNAME + " - SCORE FINAL = " + score + "/" + scoremax; 
-	    elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
+		document.title = APPNAME + " - " + STR_SCORE_FIN + score + "/" + scoremax; 
+	    elt("score").innerHTML = STR_SCORE_FIN + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
 		
@@ -1240,8 +1247,8 @@
 	{		
 		quit();
 		show("score");
-		document.title = APPNAME + " - SCORE FINAL = " + score + "/" + scoremax;
-		elt("score").innerHTML = "SCORE FINAL = " + score + "/" + scoremax + " - " + starscore(score);
+		document.title = APPNAME + " - " + STR_SCORE_FIN + score + "/" + scoremax;
+		elt("score").innerHTML = STR_SCORE_FIN + score + "/" + scoremax + " - " + starscore(score);
 		return;
 	}
 	
@@ -1603,7 +1610,7 @@
 <div id="tip3" style="display:none" class="tooltip">Trombinoscope<BR>interactif
 	<span class="clavier"><BR>[3]</span></div>
 	
-<div id="chx_masque"><input id="maskon" type="checkbox" onchange="change_masque(false)">
+<div id="chx_masque"><input id="maskon" type="checkbox" onchange="change_masque(false)" title="Activer/Désactiver le masque (clavier : touche [M])">
 	<img id="masque" width="75px" src="masque.png" ALT="masque" title="Masque désactivé"
 		class="niv_gris" onclick="change_masque(true)">
 </div> <!--chx_masque-->
