@@ -26,8 +26,6 @@
 // 	(à copier-coller)
 //
 
-
-
  const BASE_SEN_URL = "https://www.senat.fr/";
  const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json"; 
  var tab_senateurs = []; //objets "senateur"
@@ -69,6 +67,7 @@
 	["Edgar FAURE","faure_edgar000197",0.85,39,109],
 	["Jean FRANÇOIS-PONCET","francois_poncet_jean83033q",0.7,45,81],
 	["André LABARRÈRE","labarrere_andre01032m",0.67,50,101],
+	["Raymond MARCELLIN","marcellin_raymond59715v",0.79,51,117],
 	["Pierre MAUROY","mauroy_pierre92037v",0.7,47,86],
 	["François MITTERAND","mitterrand_francois000379",0.94,56,124],
 	["Gaston MONNERVILLE","monnerville_gaston000677",0.91,42,115],
@@ -404,11 +403,9 @@
 	mouv = !mouv;
 	document.addEventListener("mousemove", move, false);
  }
- 
 </script>
 </head>
 <body onload="start()" style="user-select:none">
-
 <div id="messen">
 	<img id="img0">
 	<img id="mask" src="masque.png" style="position:absolute;top:100px;left:45px">
@@ -430,6 +427,5 @@
 	</div><!--/btns-->
 	<textarea id="save" rows="5" cols="33"></textarea>
 </div> <!--/messen-->
- 
 </body>
 </html>
