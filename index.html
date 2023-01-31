@@ -84,7 +84,6 @@
 	#trombi { color:black; background-color:white; }
 	.senelt, .sennom, .sendpt { color:black; }
 	#nbsen { border:2px solid grey; }
-
 }
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
@@ -95,8 +94,8 @@
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.039";
- const VERDES = "G. JANDOT - 17/10/2022";
+ const VERNUM = "1.040";
+ const VERDES = "G. JANDOT - 31/01/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -274,14 +273,15 @@
 
  
 // refactoring / helpers
- function elt(nom_obj)  { return document.getElementById(nom_obj); }
- function show(nom_obj) { elt(nom_obj).style.display = ""; }
- function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function flotte(e)     { elt(cur_tip).style.top = (e.clientY-50) + 'px'; }
- function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
- function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
- function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom; }
- function rnd(n)		{ return Math.floor(n*Math.random()); } 
+ function elt(nom_obj)  { return document.getElementById(nom_obj) }
+ function show(nom_obj) { elt(nom_obj).style.display = "" }
+ function hide(nom_obj) { elt(nom_obj).style.display = "none" }
+ function flotte(e)     { elt(cur_tip).style.top = (e.clientY-50) + 'px' }
+ function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg" }
+ function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html" }
+ function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom }
+ function rnd(n)		{ return Math.floor(n*Math.random()) }
+ function set_cur(nom)	{ document.body.style.cursor = nom }
  
  function multishow(nom, ideb, ifin)
  {
@@ -313,7 +313,7 @@
 		return;
 	}
 	
- 	if (param == "?trombi=0")
+ 	if ( (param == "?trombi=0") || (param == "?notrombi") )
 	{
 		trombi_mode = TROMBI_OFF;
 	}
@@ -324,6 +324,7 @@
 	}
 
 	document.body.style.backgroundColor = "black";
+	set_cur("wait");
 	show("loading");
 	elt("vernum").innerHTML = VERNUM;
 	elt("version").title = VERDES;
@@ -597,6 +598,7 @@
 		if (trombi_mode==TROMBI_OFF)
 		{
 			hide("loading");
+			set_cur("default");
 			hide("c3");
 			showmenu();
 		}
@@ -671,6 +673,7 @@
 		{
 			showmenu();
 		}
+		set_cur("default");
 	}
  }
  
