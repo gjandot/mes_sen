@@ -100,8 +100,8 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.041";
- const VERDES = "G. JANDOT - 16/02/2023";
+ const VERNUM = "1.042";
+ const VERDES = "G. JANDOT - 17/02/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -347,7 +347,7 @@ legend, label { color: white; }
 	elt("version").title = VERDES;
 	
 	document.addEventListener('keyup', keyboard);
-
+	load_config();
 	ajax(DATA_URL, parsing);
  }
  
@@ -1250,6 +1250,7 @@ legend, label { color: white; }
 			elt(eltname).style.transform = `scale(${tab_senateurs[nums[i]].m_scale})`;
 			elt(eltname).style.left = (tab_senateurs[nums[i]].m_offx + i*MASK_H_AJUST - 3) + PX;
 			elt(eltname).style.top = (tab_senateurs[nums[i]].m_offy + MASK_V_AJUST) + PX;
+			elt(eltname).style.pointerEvents = "none";
 		}
 		multishow("mask", 1, NB_PROP);
 	}
