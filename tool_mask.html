@@ -27,11 +27,12 @@
 //
 
  const BASE_SEN_URL = "https://www.senat.fr/";
- const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json"; 
+ const DATA_URL = BASE_SEN_URL + "api-senat/senateurs.json"; 
  var tab_senateurs = []; //objets "senateur"
 	// .mat
 	// .nom
 	// .prenom
+	// .id (pour le tri)
 	// .img
 	// .scale
 	// .offx
@@ -166,27 +167,36 @@
 	}
  }
  
+ function tri_alphaSenateur(s1, s2)
+ {
+	if (s1.id>s2.id) return 1;
+	if (s1.id<s2.id) return -1;
+	return 0;
+ }
+ 
  function parsing(texte)
  {
-	var jsonobj = JSON.parse(texte);
-	var jsen = jsonobj['senateurs'];
+	var jsen = JSON.parse(texte);
 	for (var i=0; i<jsen.length; i++)
 	{
-		nom = jsen[i]['etat_civil']['nomusecap'];
-		prenom = jsen[i]['etat_civil']['prenomuse'];
+		nom = jsen[i]['nom'];
+		prenom = jsen[i]['prenom'];
 		mat = jsen[i]['matricule'];
 		id = nom + "_" + prenom + mat;
 		id = sen2id(id);
 		var senateur = new Object();
-		senateur.nom = jsen[i]['etat_civil']['nomusecap'];
-		senateur.prenom = jsen[i]['etat_civil']['prenomuse'];
+		senateur.nom = nom.toUpperCase();
+		senateur.prenom = prenom;
 		senateur.mat = mat;
+		senateur.id = id;
 		senateur.img = id2img(id);
 		senateur.scale = DEF_SCALE;
 		senateur.offx = DEF_OFFX;
 		senateur.offy = DEF_OFFY;
 		tab_senateurs.push(senateur);
 	}
+	
+	tab_senateurs.sort(tri_alphaSenateur);
 	
 	//parsing mask data
 	for (var i=0; i<tab_datamask.length; i++)

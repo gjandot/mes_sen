@@ -100,8 +100,8 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.042";
- const VERDES = "G. JANDOT - 17/02/2023";
+ const VERNUM = "1.043";
+ const VERDES = "G. JANDOT - 01/05/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -130,7 +130,7 @@ legend, label { color: white; }
  const UTF8_CHECK_MARK = "&#x2705";  // pict. right answer
  const UTF8_CROSS_MARK = "&#x274C";  // pict. wrong answer
  const BASE_SEN_URL = "https://www.senat.fr/";
- const DATA_URL = BASE_SEN_URL + "senateurs/sens_alpha.json";
+ const DATA_URL = BASE_SEN_URL + "api-senat/senateurs.json";
  const CIVIL_HOMME = "M.";
  const SEXE_HOMME = "H";
  const SEXE_FEMME = "F";
@@ -165,6 +165,18 @@ legend, label { color: white; }
  var tab_groupes = [];
  var tab_commissions = [];
  var tab_circonscriptions = [];
+ 
+ //libelles de commission bien trop longs => codes à transposer
+ const TABCOMM = new Map([
+  ['COM-LOIS', 'Lois'],
+  ['COM-FINC', 'Finances'],
+  ['COM-ETRD', 'Aff. étrangères'],
+  ['COM-SOCI', 'Aff. sociales'],
+  ['COM-CDD', 'Aménagement terr. et dév. dur.'],
+  ['COM-CAE', 'Aff. économiques'],
+  ['COM-AFCL', 'Culture'],
+]);
+
  var tab_bonrep = []; //indices:0..4; valeurs : 1..5
  var tab_pastprop = [];
 
@@ -544,10 +556,16 @@ legend, label { color: white; }
 	return true;
  }
  
+ function tri_alphaSenateur(s1, s2)
+ {
+	if (s1.id>s2.id) return 1;
+	if (s1.id<s2.id) return -1;
+	return 0;
+ }
+ 
  function parsing(texte)
  {
-	var jsonobj = JSON.parse(texte);
-	var jsen = jsonobj['senateurs'];
+	var jsen = JSON.parse(texte);
 	
 	if ( (jsen.length < MIN_NB_SEN) || (jsen.length > MAX_NB_SEN) )
 	{
@@ -568,10 +586,10 @@ legend, label { color: white; }
 		for (var i=0; i<jsen.length; i++)
 		{
 			var senateur = new Object();
-			senateur.nom = jsen[i]['etat_civil']['nomusecap'];
-			senateur.prenom = jsen[i]['etat_civil']['prenomuse'];
+			senateur.nom = jsen[i]['nom'];
+			senateur.prenom = jsen[i]['prenom'];
 			senateur.normnom = strnorm(senateur.prenom + " " + senateur.nom); //pour filtrage sans accent
-			senateur.sexe = jsen[i]['etat_civil']['qualite'];
+			senateur.sexe = jsen[i]['civilite'];
 			if (senateur.sexe == CIVIL_HOMME)
 			{
 				senateur.sexe = SEXE_HOMME;
@@ -580,12 +598,13 @@ legend, label { color: white; }
 			{
 				senateur.sexe = SEXE_FEMME;
 			}
-			//le "nom_technique" est malheureusement inexploitable en raison d'un grand nombre d'anomalies
+			//le "nom_technique" (tri) est malheureusement inexploitable en raison d'un grand nombre d'anomalies
 			// (espaces et accents restants, matricule parfois présent et autres curiosités)
 			//=>il faut le recalculer
 			senateur.mat = jsen[i]['matricule'];
 			senateur.id = senateur.nom + "_" + senateur.prenom + senateur.mat;
 			senateur.id = sen2id(senateur.id);
+			senateur.nom = senateur.nom.toUpperCase();
 			
 			//default mask
 			senateur.m_scale = DEF_M_SCALE;
@@ -594,23 +613,35 @@ legend, label { color: white; }
 			
 			try 
 			{
-				senateur.groupe = jsen[i]['groupe_politique']['nom_court'];
+				senateur.groupe = jsen[i]['groupe']['code'];
 			}
 			catch(e)
 			//en début de mandat, le groupe n'est pas précisé immédiatement
 			{
 				senateur.groupe = "";
 			}
-			senateur.dpt = jsen[i]['circonscription']['nom'];
-			try
-			{
-				senateur.comm = jsen[i]['commission_permanente']['nom_court'];
-			}
-			catch(e)
+			senateur.dpt = jsen[i]['circonscription']['code'] + " - " + jsen[i]['circonscription']['libelle'];
+		
+			var organismes = jsen[i]['organismes'];
 			//le/la président.e du Sénat n'appartient à aucune commission permanente
+			senateur.comm = "";
+			for (var j=0; j<organismes.length; j++)
 			{
-				senateur.comm = "";
+				if (organismes[j]['type'] == "COMMISSION")
+				{
+					var lacomm = organismes[j]['code'];
+					if (lacomm!="COMEUR-AFEU")
+					//beurk; les AFFEUR ne devraient pas être catégorisées en commission permanente
+					{
+						if (TABCOMM.get(lacomm)!== undefined)
+						{
+							senateur.comm = TABCOMM.get(lacomm);
+							break; //une seule commission permanente par sénateur
+						}
+					}
+				}
 			}
+			
 			senateur.imgok = true;
 			tab_senateurs.push(senateur);
 			//LISTE DES GROUPES - groups list
@@ -632,6 +663,11 @@ legend, label { color: white; }
 				tab_circonscriptions.push(senateur.dpt);
 			}
 		}
+		
+		tab_senateurs.sort(tri_alphaSenateur);
+		tab_groupes.sort();
+		tab_commissions.sort();
+		tab_circonscriptions.sort();
 		
 		//parsing mask data
 		for (var i=0; i<tab_datamask.length; i++)
@@ -760,6 +796,7 @@ legend, label { color: white; }
 	trombi_f = true;
 	elt("selgrp").selectedIndex = 0;
 	elt("selcom").selectedIndex = 0;
+	elt("selcir").selectedIndex = 0;
 	elt("filtre").value = NO_FILTER;
 	elt("filtre").style.color = NOFILT_COLOR;
 	majtrombi(0);
@@ -1399,21 +1436,18 @@ legend, label { color: white; }
 		hide("loading");
 		elt("listsen").innerHTML = trombi_str;
 		trombi_str = "";
-		tab_groupes.sort();
 		var grp = elt("selgrp");
 		grp.innerHTML = "<option value=\"\">" + NO_GROUP + "</option>";
 		for (var i=0; i< tab_groupes.length; i++)
 		{
 			grp.innerHTML += "<option value=\"" + tab_groupes[i] + "\">" + tab_groupes[i] + "</option>";
 		}
-		tab_commissions.sort();
 		var com = elt("selcom");
 		com.innerHTML = "<option value=\"\">" + NO_COMM + "</option>";
 		for (var i=0; i< tab_commissions.length; i++)
 		{
 			com.innerHTML += "<option value=\"" + tab_commissions[i] + "\">" + tab_commissions[i] + "</option>";
 		}
-		tab_circonscriptions.sort();
 		var circo = elt("selcir");
 		circo.innerHTML = "<option value=\"\">" + NO_CIRC + "</option>";
 		for (var i=0; i< tab_circonscriptions.length; i++)
@@ -1514,6 +1548,7 @@ legend, label { color: white; }
 	if ( ((filtre!= NO_FILTER) && (filtre!=""))
 			|| (filgrp != NO_GROUP)
 			|| (filcom != NO_COMM)
+			|| (filcir != NO_CIRC)
 		)
 	{
 		show("reset");
