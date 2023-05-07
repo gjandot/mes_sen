@@ -100,8 +100,8 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.043";
- const VERDES = "G. JANDOT - 01/05/2023";
+ const VERNUM = "1.044";
+ const VERDES = "G. JANDOT - 07/05/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -172,6 +172,17 @@ legend, label { color: white; }
   ['COM-FINC', 'Finances'],
   ['COM-ETRD', 'Aff. étrangères'],
   ['COM-SOCI', 'Aff. sociales'],
+  ['COM-CDD', 'Aménagement terr. et dév. dur.'],
+  ['COM-CAE', 'Aff. économiques'],
+  ['COM-AFCL', 'Culture'],
+]);
+
+ //sorry for that; quelques codes de groupes politiques sont obsolètes
+ const TABGRP = new Map([
+  ['UMP', 'LR'],
+  ['CRC', 'CRCE'],
+  ['SOC', 'SER'],
+  ['LREM', 'RDPI'],
   ['COM-CDD', 'Aménagement terr. et dév. dur.'],
   ['COM-CAE', 'Aff. économiques'],
   ['COM-AFCL', 'Culture'],
@@ -614,12 +625,17 @@ legend, label { color: white; }
 			try 
 			{
 				senateur.groupe = jsen[i]['groupe']['code'];
+				if (TABGRP.get(senateur.groupe)!== undefined)
+				{
+					senateur.groupe = TABGRP.get(senateur.groupe);
+				}
 			}
 			catch(e)
 			//en début de mandat, le groupe n'est pas précisé immédiatement
 			{
 				senateur.groupe = "";
 			}
+			
 			senateur.dpt = jsen[i]['circonscription']['code'] + " - " + jsen[i]['circonscription']['libelle'];
 		
 			var organismes = jsen[i]['organismes'];
