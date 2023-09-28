@@ -59,8 +59,7 @@
 #tools { position:fixed; top:0; background-color:black; width:100%; padding:15px; }
 #listsen { padding-top:45px; }
 #nbsen { font-size:1.3em; color:white; border:2px solid white; border-radius:50%; margin-left:50px; padding:5px; background-color:#888888; }
-.actif { color:lightgreen; text-decoration:none; cursor:pointer; border:1px solid lightgreen; }
-.inactif { color:red; text-decoration:line-through; cursor:pointer; } 
+.actif { cursor:pointer; height:32px; vertical-align:middle; }
 .imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
 .infotrombi { float:right; padding-left:5px;}
 .senelt { color:white; text-decoration:none; border:1px solid grey; width:22%;
@@ -100,15 +99,13 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.044";
- const VERDES = "G. JANDOT - 07/05/2023";
+ const VERNUM = "1.045";
+ const VERDES = "G. JANDOT - 28/09/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
  const TROMBI_ONLY = 1;
  var trombi_mode = TROMBI_NORMAL;
- const CLASS_ACTIF = "actif";
- const CLASS_INACTIF = "inactif";
 
  const NB_PROP = 5;
  const MIN_NB_SEN = 200;
@@ -766,6 +763,8 @@ legend, label { color: white; }
  
  function change_masque(modif)
  {
+	return;
+	
 	//si clic sur image => il faut changer l'état de la case à cocher
 	if (modif)
 	{
@@ -921,13 +920,13 @@ legend, label { color: white; }
 				}
 			}
 			break;
-		case "m":
+		/*case "m":
 		case "M":
 			if (cur_game==999)//config
 			{
 				change_masque(true); //mettre à jour la case à cocher
 			}
-			break;
+			break;*/
 		case "c":
 		case "C":
 			if (cur_game==0)//menu
@@ -1547,19 +1546,19 @@ legend, label { color: white; }
 		
 	if (trombi_h)
 	{
-		elt("hommes").className = CLASS_ACTIF;
+		elt("hommes").src = "genre_h.png";
 	}
 	else
 	{
-		elt("hommes").className = CLASS_INACTIF;
+		elt("hommes").src = "genre_noh.png";
 	}
 	if (trombi_f)
 	{
-		elt("femmes").className = CLASS_ACTIF;
+		elt("femmes").src = "genre_f.png";
 	}
 	else
 	{
-		elt("femmes").className = CLASS_INACTIF;
+		elt("femmes").src = "genre_nof.png";
 	}
 	if ( ((filtre!= NO_FILTER) && (filtre!=""))
 			|| (filgrp != NO_GROUP)
@@ -1675,12 +1674,12 @@ legend, label { color: white; }
  
  function load_config()
  {
-	conf_mask = getint_localstorage(param_mask, 0);
 	mask_on = false;
+	/*conf_mask = getint_localstorage(param_mask, 0);
 	if (conf_mask==1)
 	{
 		mask_on = true;
-	}
+	}*/
 	conf_timmax = getint_localstorage(param_timmax, 9);
 	time_max = conf_timmax*1000;
 	conf_nbquest = getint_localstorage(param_nbquest, 20);
@@ -1689,8 +1688,8 @@ legend, label { color: white; }
     score_2 = 0.9 * nb_max_quest;
 	
 	//update config. screen
-	elt("maskon").checked = mask_on;
-	change_masque(false);
+	/*elt("maskon").checked = mask_on;
+	change_masque(false);*/
 
 	switch(nb_max_quest)
 	{
@@ -1852,10 +1851,10 @@ legend, label { color: white; }
 			<label for="dr5">30</label>
 		</fieldset>
 		<UL>
-		<div id="chx_masque"><input id="maskon" type="checkbox" onchange="change_masque(false)" title="Activer/Désactiver le masque (clavier : touche [M])">
+		<!--div id="chx_masque"><input id="maskon" type="checkbox" onchange="change_masque(false)" title="Activer/Désactiver le masque (clavier : touche [M])">
 			<img id="masque" width="75px" src="masque.png" alt="masque" title="Masque désactivé"
 				class="niv_gris" onclick="change_masque(true)">
-		</div> <!--chx_masque-->
+		</div--> <!--chx_masque-->
 		<button id="btnok" onclick="valid_conf()" class="bouton quit ok">OK</button>
 	</div> <!--/config-->
 
@@ -1864,8 +1863,8 @@ legend, label { color: white; }
 
 <div id="trombi" style="display:none">
 	<div id="tools">
-		<span id="hommes" onclick="majtrombi(1)" class="actif">Hommes</span>&nbsp;
-		<span id="femmes" onclick="majtrombi(2)" class="actif">Femmes</span>&nbsp;
+		<img id="hommes" onclick="majtrombi(1)" src="genre_h.png" class="actif" alt="Hommes" title="Hommes">&nbsp;
+		<img id="femmes" onclick="majtrombi(2)" src="genre_f.png" class="actif" alt="Femmes" title="Femmes">&nbsp;
 		<select id="selgrp" onchange="majtrombi(0)" title="Sélection d'un groupe politique"></select>
 		<select id="selcom" onchange="majtrombi(0)" Title="Sélection d'une commission permanente"></select>
 		<select id="selcir" onchange="majtrombi(0)" Title="Sélection d'une circonscription"></select>
