@@ -40,19 +40,19 @@
 #questbar { background-color:blue; width:50%; border-radius:9px; padding-top:5px; padding-bottom:5px; }
 #questnum { text-align:center; width:100%; position:absolute; top:11px; }
 
-#img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
+#img0 { height:155px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
 #noms { float:left; margin-top:25px; }
 .nomsen { font-size:1.2em; height:25px; color:white; cursor:pointer; }
 .nomsen:hover { font-size:1.4em; color:yellow; }
 #nomok { font-size:1.5em; color:#44FF44; }
 #nomno { font-size:1.1em; color:#FF8888; }
-#imgindic { height:90px; width:62px; border:3px solid red; border-radius:9px; }
+#imgindic { height:62px; width:62px; border:3px solid red; border-radius:9px; }
 
 #nom0 { font-size:1.4em; color:white; margin-top:25px; padding-bottom:25px; }
-.imgsen { height:225px; width:155px; border:1px solid black; border-radius:9px; margin:3px; cursor:pointer; }
+.imgsen { height:155px; width:155px; border:1px solid black; border-radius:9px; margin:3px; cursor:pointer; }
 .imgsen:hover { transform:scale(1.1); border:3px solid yellow; margin:1px; } 
-#imgok { height:247px; width:170px; border:5px solid #44FF44; border-radius:15px; }
-#imgno { height:90px; width:62px; border:3px solid red; margin-left:9px; border-radius:9px; }
+#imgok { height:170px; width:170px; border:5px solid #44FF44; border-radius:15px; }
+#imgno { height:62px; width:62px; border:3px solid red; margin-left:9px; border-radius:9px; }
 #nomindic { font-size:1.1em; color:#FF8888; }
 
 #trombi { color:white; }
@@ -60,7 +60,7 @@
 #listsen { padding-top:45px; }
 #nbsen { font-size:1.3em; color:white; border:2px solid white; border-radius:50%; margin-left:50px; padding:5px; background-color:#888888; }
 .actif { cursor:pointer; height:32px; vertical-align:middle; }
-.imgtrombi { height:90px; width:62px; border-radius:9px; float:left; }
+.imgtrombi { height:62px; width:62px; border-radius:9px; float:left; }
 .infotrombi { float:right; padding-left:5px;}
 .senelt { color:white; text-decoration:none; border:1px solid grey; width:22%;
 			padding:3px; margin:9px; box-shadow:3px 3px 5px white; display:inline-flex; }
@@ -92,15 +92,15 @@ legend, label { color: white; }
 }
 </style>
 <noscript>L'application nécessite l'activation de Javascript.</noscript>
-<script type="text/javascript" src="datamask.js"></script> <!--//tab_datamask[["m", s, x, y]]-->
+<!--script type="text/javascript" src="datamask.js"></script--> <!--//tab_datamask[["m", s, x, y]]-->
 <script type="text/javascript">
 //
 //no framework; it's funnier to reinvent the wheel.
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.045";
- const VERDES = "G. JANDOT - 28/09/2023";
+ const VERNUM = "1.046";
+ const VERDES = "G. JANDOT - 02/10/2023";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -314,7 +314,7 @@ legend, label { color: white; }
  function show(nom_obj) { elt(nom_obj).style.display = "" }
  function hide(nom_obj) { elt(nom_obj).style.display = "none" }
  function flotte(e)     { elt(cur_tip).style.top = (e.clientY-50) + 'px' }
- function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg" }
+ function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + "_carre.jpg" }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html" }
  function nomcomplet(i) { return tab_senateurs[i].prenom + " " + tab_senateurs[i].nom }
  function rnd(n)		{ return Math.floor(n*Math.random()) }
@@ -615,9 +615,9 @@ legend, label { color: white; }
 			senateur.nom = senateur.nom.toUpperCase();
 			
 			//default mask
-			senateur.m_scale = DEF_M_SCALE;
+			/*senateur.m_scale = DEF_M_SCALE;
 			senateur.m_offx = DEF_M_OFFX;
-			senateur.m_offy = DEF_M_OFFY;
+			senateur.m_offy = DEF_M_OFFY;*/
 			
 			try 
 			{
@@ -683,7 +683,7 @@ legend, label { color: white; }
 		tab_circonscriptions.sort();
 		
 		//parsing mask data
-		for (var i=0; i<tab_datamask.length; i++)
+		/*for (var i=0; i<tab_datamask.length; i++)
 		//tab_datamask[[["mat", scale, offset_x, offset_y]]
 		{
 			idx = find_sen(tab_datamask[i][0]); //matricule
@@ -694,7 +694,7 @@ legend, label { color: white; }
 				senateur.m_offx = tab_datamask[i][2]; //offset_x
 				senateur.m_offy = tab_datamask[i][3]; //offset_y
 			}
-		}
+		}*/
 		
 		if (trombi_mode==TROMBI_OFF)
 		{
@@ -1051,13 +1051,13 @@ legend, label { color: white; }
 		}
 
 		elt("img0").src = id2img(tab_senateurs[nums[0]].id);
-		if (mask_on)
+		/*if (mask_on)
 		{
 			elt("mask0").style.transform = `scale(${tab_senateurs[nums[0]].m_scale})`;
 			elt("mask0").style.left = tab_senateurs[nums[0]].m_offx + PX;
 			elt("mask0").style.top = (tab_senateurs[nums[0]].m_offy+45) + PX;
 			show("mask0");
-		}
+		}*/
 		
 		elt("nomok").innerHTML = nomcomplet(nums[0]);
 		bonrep = rnd(NB_PROP)+1; //emplacement pour la bonne réponse
@@ -1149,13 +1149,13 @@ legend, label { color: white; }
 
 		bonrep = rnd(NB_PROP)+1;
 		elt("img0").src = id2img(tab_senateurs[vnum].id);
-		if (mask_on)
+		/*if (mask_on)
 		{
 			elt("mask0").style.transform = `scale(${tab_senateurs[vnum].m_scale})`;
 			elt("mask0").style.left = tab_senateurs[vnum].m_offx + PX;
 			elt("mask0").style.top = (tab_senateurs[vnum].m_offy+45) + PX;
 			show("mask0");
-		}
+		}*/
 		elt("nom"+bonrep).innerHTML = nomcomplet(vnum);
 		elt("nomok").innerHTML = nomcomplet(vnum);
 	} // mode normal
@@ -1294,7 +1294,7 @@ legend, label { color: white; }
 		elt("img"+(i+1)).src = id2img(tab_senateurs[nums[i]].id);
 	}
 
-	if (mask_on)
+	/*if (mask_on)
 	{
 		for (var i=0; i<NB_PROP; i++)
 		{
@@ -1309,7 +1309,7 @@ legend, label { color: white; }
 	else
 	{
 		multihide("mask", 1, NB_PROP);
-	}
+	}*/
 
 	for (var i=0; i<NB_PROP; i++)
 	{
@@ -1374,13 +1374,13 @@ legend, label { color: white; }
 	elt("nom0").innerHTML= nomcomplet(vnum);
 	var varimg = "img" + bonrep;
 	elt(varimg).src = id2img(tab_senateurs[vnum].id);
-	if (mask_on)
+	/*if (mask_on)
 	{
 		var varmask = "mask" + bonrep;
 		elt(varmask).style.transform = `scale(${tab_senateurs[vnum].m_scale})`;
 		elt(varmask).style.left = (tab_senateurs[vnum].m_offx + (bonrep-1)*MASK_H_AJUST - 3) + PX;
 		elt(varmask).style.top = (tab_senateurs[vnum].m_offy + MASK_V_AJUST) + PX;
-	}
+	}*/
 	elt("imgok").src = elt(varimg).src;
 	multishow("img", 1, NB_PROP);
 	show("temps");
@@ -1779,7 +1779,8 @@ legend, label { color: white; }
 		<div id="tip1" style="display:none" class="tooltip">Pour 1 photo, plusieurs noms.<BR>Il faut trouver le bon.
 			<span class="clavier"><BR>[1]</span></div>
 		<div id="c2" onclick="launch(2)" class="gamesel"
-				onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
+				onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="
+				(event)"
 				>"Quelle photo&nbsp;?"</div>
 		<div id="tip2" style="display:none" class="tooltip">Pour 1 nom, plusieurs photos.<BR>Il faut trouver la bonne.
 			<span class="clavier"><BR>[2]</span></div>

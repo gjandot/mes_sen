@@ -7,7 +7,7 @@
 <title>Mes-Sen / Outil "masques"</title>
 <style>
 #messen { height:420px; width:850px; margin:auto; padding:9px; border-radius:20px; background-color:#C80947; position:relative; }
-#img0 { height:225px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
+#img0 { height:155px; width:155px; margin:9px; border:1px solid black; border-radius:9px; float:left; }
 #nom { color: white; font-size:1.5em; }
 .bouton { font-size:0.8em; background-color:#FFAA44; color:#882222; border-radius:20px; cursor:pointer; display:inline-block; }
 .bouton:hover { color:white; }
@@ -104,7 +104,7 @@
  function elt(nom_obj)  { return document.getElementById(nom_obj); }
  function show(nom_obj) { elt(nom_obj).style.display = ""; }
  function hide(nom_obj) { elt(nom_obj).style.display = "none"; }
- function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + ".jpg"; }
+ function id2img(id)    { return BASE_SEN_URL + "senimg/" + id + "_carre.jpg"; }
  function id2url(id)	{ return BASE_SEN_URL + "senateur/" + id + ".html"; }
  
  function sen2id(str)
