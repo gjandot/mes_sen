@@ -99,8 +99,8 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.046";
- const VERDES = "G. JANDOT - 02/10/2023";
+ const VERNUM = "1.047";
+ const VERDES = "G. JANDOT - 27/02/2024";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -469,7 +469,7 @@ legend, label { color: white; }
 	numcit = newcit;
  	var citation = tab_citations[numcit];
 	elt("citation").style.top= rnd(300) + PX;
- 	elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
+ 	elt("citation").innerHTML = "<A TARGET=\"_messen\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
  }
  
  function test_citations()
@@ -480,7 +480,7 @@ legend, label { color: white; }
 	{
 		var citation = tab_citations[i];
 		elt("citation").style.top= rnd(300) + PX;
-		elt("citation").innerHTML = "<A TARGET=\"_blank\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
+		elt("citation").innerHTML = "<A TARGET=\"_messen\" HREF=\"" + fullurl(citation[1]) + "\">" +	citation[0] + "</A>";
 		console.log(citation[0]); //!
 		console.log(fullurl(citation[1])); //!
 	}
@@ -1431,7 +1431,7 @@ legend, label { color: white; }
  {
 	var i = async_cpt;
 	
-	trombi_str += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_blank\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
+	trombi_str += "<A HREF=\"" + id2url(tab_senateurs[i].id) + "\" TARGET=\"_messen\"><div class=\"senelt\" id=\"" + tab_senateurs[i].id + "\">"
 			+ "<img class=\"imgtrombi\" src=\"" + id2img(tab_senateurs[i].id) + "\" onerror=\"imgerr(" + i +")\">"
 			+ "<div class=\"infotrombi\"><div class=\"sennom\">" + nomcomplet(i) + "</div>"
 			+ "<div class=\"sengrp\">" + tab_senateurs[i].groupe + "</div>"
@@ -1880,6 +1880,6 @@ legend, label { color: white; }
 	<div id="vide" class="senelt" style="display:none" title="(personne)">Aucun résultat.</div>
 </div> <!--/trombi-->
 
-<div id="version"><A HREF="https://github.com/gjandot/mes_sen/" TARGET="_blank">Version <span id="vernum">0.000</span></A></div>
+<div id="version"><A HREF="https://github.com/gjandot/mes_sen/" TARGET="_messen">Version <span id="vernum">0.000</span></A></div>
 </body>
 </html>
