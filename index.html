@@ -81,6 +81,8 @@ legend, label { color: white; }
 
 #error { font-size:1.1em; color:#C80947; border:1px solid; text-align:center; margin:0 auto; width:33%; background-color:#FFCCCC; }
 #version a { font-size:0.8em; color:#777777; position:fixed; bottom:5px; right:9px; text-decoration:none; }
+#note { font-size:0.8em; color:#777777; position: fixed; bottom:5px; left:5px; z-index:-1; }		
+
 
 /* pour l'impression du trombi : */
 @media print {
@@ -99,8 +101,8 @@ legend, label { color: white; }
 //pas de framework; c'est plus drôle de réinventer la roue.
 //
  const APPNAME = "Mes-Sen";
- const VERNUM = "1.047";
- const VERDES = "G. JANDOT - 27/02/2024";
+ const VERNUM = "1.048";
+ const VERDES = "G. JANDOT - 25/03/2024";
 
  const TROMBI_OFF = -1;
  const TROMBI_NORMAL = 0;
@@ -1779,8 +1781,7 @@ legend, label { color: white; }
 		<div id="tip1" style="display:none" class="tooltip">Pour 1 photo, plusieurs noms.<BR>Il faut trouver le bon.
 			<span class="clavier"><BR>[1]</span></div>
 		<div id="c2" onclick="launch(2)" class="gamesel"
-				onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="
-				(event)"
+				onmouseenter="cur_tip='tip2'; show('tip2')" onmouseleave="hide('tip2')" onmousemove="flotte(event)"
 				>"Quelle photo&nbsp;?"</div>
 		<div id="tip2" style="display:none" class="tooltip">Pour 1 nom, plusieurs photos.<BR>Il faut trouver la bonne.
 			<span class="clavier"><BR>[2]</span></div>
@@ -1881,5 +1882,6 @@ legend, label { color: white; }
 </div> <!--/trombi-->
 
 <div id="version"><A HREF="https://github.com/gjandot/mes_sen/" TARGET="_messen">Version <span id="vernum">0.000</span></A></div>
+<div id="note">MesSEN n'est pas une application officielle du Sénat</id>
 </body>
 </html>
